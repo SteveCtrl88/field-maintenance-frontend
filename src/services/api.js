@@ -149,29 +149,125 @@ class ApiService {
     });
   }
 
-  // Robot management endpoints
+  async getCustomer(customerId) {
+    return this.request(`/customers/${customerId}`);
+  }
+
+  // Robot management endpoints (handled through customer updates)
   async getRobots() {
-    return this.request('/robots');
+    // Get all robots from all customers
+    try {
+      const customers = await this.getCustomers();
+      if (customers.success && customers.data) {
+        const allRobots = [];
+        customers.data.forEach(customer => {
+          if (customer.robots && customer.robots.length > 0) {
+            customer.robots.forEach(robot => {
+              allRobots.push({
+                ...robot,
+                customer: {
+                  _id: customer._id,
+                  companyName: customer.companyName,
+                  address: customer.address
+                }
+              });
+            });
+          }
+        });
+        return { success: true, data: allRobots };
+      }
+      return { success: false, data: [] };
+    } catch (error) {
+      console.error('Error fetching robots:', error);
+      return { success: false, data: [] };
+    }
   }
 
   async createRobot(robotData) {
-    return this.request('/robots', {
-      method: 'POST',
-      body: JSON.stringify(robotData),
-    });
+    // Add robot to customer via customer update
+    try {
+      const customer = await this.getCustomer(robotData.customerId);
+      if (customer.success && customer.data) {
+        const updatedCustomer = { ...customer.data };
+        if (!updatedCustomer.robots) {
+          updatedCustomer.robots = [];
+        }
+        
+        // Create robot object with unique ID
+        const newRobot = {
+          _id: Date.now().toString(), // Temporary ID
+          name: robotData.name,
+          serialNumber: robotData.serialNumber,
+          type: robotData.type,
+          installationDate: robotData.installationDate,
+          location: robotData.location,
+          image: robotData.image || null,
+          status: 'active',
+          createdAt: new Date().toISOString()
+        };
+        
+        updatedCustomer.robots.push(newRobot);
+        
+        const result = await this.updateCustomer(robotData.customerId, updatedCustomer);
+        if (result.success) {
+          return { success: true, data: newRobot };
+        }
+      }
+      return { success: false, message: 'Failed to create robot' };
+    } catch (error) {
+      console.error('Error creating robot:', error);
+      return { success: false, message: 'Failed to create robot' };
+    }
   }
 
   async updateRobot(robotId, robotData) {
-    return this.request(`/robots/${robotId}`, {
-      method: 'PUT',
-      body: JSON.stringify(robotData),
-    });
+    // Update robot in customer data
+    try {
+      const customers = await this.getCustomers();
+      if (customers.success && customers.data) {
+        for (const customer of customers.data) {
+          if (customer.robots && customer.robots.length > 0) {
+            const robotIndex = customer.robots.findIndex(robot => robot._id === robotId);
+            if (robotIndex !== -1) {
+              customer.robots[robotIndex] = { ...customer.robots[robotIndex], ...robotData };
+              const result = await this.updateCustomer(customer._id, customer);
+              if (result.success) {
+                return { success: true, data: customer.robots[robotIndex] };
+              }
+            }
+          }
+        }
+      }
+      return { success: false, message: 'Robot not found' };
+    } catch (error) {
+      console.error('Error updating robot:', error);
+      return { success: false, message: 'Failed to update robot' };
+    }
   }
 
   async deleteRobot(robotId) {
-    return this.request(`/robots/${robotId}`, {
-      method: 'DELETE',
-    });
+    // Remove robot from customer data
+    try {
+      const customers = await this.getCustomers();
+      if (customers.success && customers.data) {
+        for (const customer of customers.data) {
+          if (customer.robots && customer.robots.length > 0) {
+            const robotIndex = customer.robots.findIndex(robot => robot._id === robotId);
+            if (robotIndex !== -1) {
+              customer.robots.splice(robotIndex, 1);
+              const result = await this.updateCustomer(customer._id, customer);
+              if (result.success) {
+                return { success: true, message: 'Robot deleted successfully' };
+              }
+            }
+          }
+        }
+      }
+      return { success: false, message: 'Robot not found' };
+    } catch (error) {
+      console.error('Error deleting robot:', error);
+      return { success: false, message: 'Failed to delete robot' };
+    }
   }
 
   // Inspection endpoints
