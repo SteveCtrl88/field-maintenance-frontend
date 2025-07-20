@@ -1,7 +1,7 @@
 // API Service Layer for Field Maintenance Application
 // Handles all communication with the backend API
 
-const API_BASE_URL = 'https://field-maintenance-backend-o5gmie85g-steve-pintos-projects.vercel.app';
+const API_BASE_URL = 'https://field-maintenance-backend-o5gmie85g-steve-pintos-projects.vercel.app/api/v1';
 
 class ApiService {
   constructor() {
@@ -71,7 +71,7 @@ class ApiService {
 
   // Authentication endpoints
   async login(email, password) {
-    const response = await this.request('/api/auth/login', {
+    const response = await this.request('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
@@ -84,7 +84,7 @@ class ApiService {
   }
 
   async register(userData) {
-    return this.request('/api/auth/register', {
+    return this.request('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
@@ -96,109 +96,109 @@ class ApiService {
   }
 
   async getCurrentUser() {
-    return this.request('/api/auth/me');
+    return this.request('/auth/me');
   }
 
   // User management endpoints
   async getUsers() {
-    return this.request('/api/users');
+    return this.request('/users');
   }
 
   async createUser(userData) {
-    return this.request('/api/users', {
+    return this.request('/users', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
   }
 
   async updateUser(userId, userData) {
-    return this.request(`/api/users/${userId}`, {
+    return this.request(`/users/${userId}`, {
       method: 'PUT',
       body: JSON.stringify(userData),
     });
   }
 
   async deleteUser(userId) {
-    return this.request(`/api/users/${userId}`, {
+    return this.request(`/users/${userId}`, {
       method: 'DELETE',
     });
   }
 
   // Customer management endpoints
   async getCustomers() {
-    return this.request('/api/customers');
+    return this.request('/customers');
   }
 
   async createCustomer(customerData) {
-    return this.request('/api/customers', {
+    return this.request('/customers', {
       method: 'POST',
       body: JSON.stringify(customerData),
     });
   }
 
   async updateCustomer(customerId, customerData) {
-    return this.request(`/api/customers/${customerId}`, {
+    return this.request(`/customers/${customerId}`, {
       method: 'PUT',
       body: JSON.stringify(customerData),
     });
   }
 
   async deleteCustomer(customerId) {
-    return this.request(`/api/customers/${customerId}`, {
+    return this.request(`/customers/${customerId}`, {
       method: 'DELETE',
     });
   }
 
   // Robot management endpoints
   async getRobots() {
-    return this.request('/api/robots');
+    return this.request('/robots');
   }
 
   async createRobot(robotData) {
-    return this.request('/api/robots', {
+    return this.request('/robots', {
       method: 'POST',
       body: JSON.stringify(robotData),
     });
   }
 
   async updateRobot(robotId, robotData) {
-    return this.request(`/api/robots/${robotId}`, {
+    return this.request(`/robots/${robotId}`, {
       method: 'PUT',
       body: JSON.stringify(robotData),
     });
   }
 
   async deleteRobot(robotId) {
-    return this.request(`/api/robots/${robotId}`, {
+    return this.request(`/robots/${robotId}`, {
       method: 'DELETE',
     });
   }
 
   // Inspection endpoints
   async getInspections() {
-    return this.request('/api/inspections');
+    return this.request('/inspections');
   }
 
   async createInspection(inspectionData) {
-    return this.request('/api/inspections', {
+    return this.request('/inspections', {
       method: 'POST',
       body: JSON.stringify(inspectionData),
     });
   }
 
   async updateInspection(inspectionId, inspectionData) {
-    return this.request(`/api/inspections/${inspectionId}`, {
+    return this.request(`/inspections/${inspectionId}`, {
       method: 'PUT',
       body: JSON.stringify(inspectionData),
     });
   }
 
   async getInspection(inspectionId) {
-    return this.request(`/api/inspections/${inspectionId}`);
+    return this.request(`/inspections/${inspectionId}`);
   }
 
   async deleteInspection(inspectionId) {
-    return this.request(`/api/inspections/${inspectionId}`, {
+    return this.request(`/inspections/${inspectionId}`, {
       method: 'DELETE',
     });
   }
@@ -220,7 +220,7 @@ class ApiService {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${this.baseURL}/api/files/upload`, config);
+    const response = await fetch(`${this.baseURL}/files/upload`, config);
     
     if (!response.ok) {
       throw new Error(`Upload failed: ${response.status}`);
@@ -236,11 +236,11 @@ class ApiService {
 
   // Reports endpoints
   async getReports() {
-    return this.request('/api/reports');
+    return this.request('/reports');
   }
 
   async generateReport(reportData) {
-    return this.request('/api/reports/generate', {
+    return this.request('/reports/generate', {
       method: 'POST',
       body: JSON.stringify(reportData),
     });
