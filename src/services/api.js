@@ -1,7 +1,7 @@
 // API Service Layer for Field Maintenance Application
 // Handles all communication with the backend API
 
-const API_BASE_URL = 'https://field-maintenance-backend-o5gmie85g-steve-pintos-projects.vercel.app/api/v1';
+const API_BASE_URL = 'https://e5h6i7cny6dn.manus.space/api/v1';
 
 class ApiService {
   constructor() {
@@ -184,36 +184,17 @@ class ApiService {
   }
 
   async createRobot(robotData) {
-    // Add robot to customer via customer update
+    // Create robot using the dedicated robot endpoint
     try {
-      const customer = await this.getCustomer(robotData.customerId);
-      if (customer.success && customer.data) {
-        const updatedCustomer = { ...customer.data };
-        if (!updatedCustomer.robots) {
-          updatedCustomer.robots = [];
-        }
-        
-        // Create robot object with unique ID
-        const newRobot = {
-          _id: Date.now().toString(), // Temporary ID
-          name: robotData.name,
-          serialNumber: robotData.serialNumber,
-          type: robotData.type,
-          installationDate: robotData.installationDate,
-          location: robotData.location,
-          image: robotData.image || null,
-          status: 'active',
-          createdAt: new Date().toISOString()
-        };
-        
-        updatedCustomer.robots.push(newRobot);
-        
-        const result = await this.updateCustomer(robotData.customerId, updatedCustomer);
-        if (result.success) {
-          return { success: true, data: newRobot };
-        }
+      const result = await this.request('/robots', {
+        method: 'POST',
+        body: JSON.stringify(robotData),
+      });
+      
+      if (result.success) {
+        return { success: true, data: result.data };
       }
-      return { success: false, message: 'Failed to create robot' };
+      return { success: false, message: result.message || 'Failed to create robot' };
     } catch (error) {
       console.error('Error creating robot:', error);
       return { success: false, message: 'Failed to create robot' };
@@ -221,24 +202,17 @@ class ApiService {
   }
 
   async updateRobot(robotId, robotData) {
-    // Update robot in customer data
+    // Update robot using the dedicated robot endpoint
     try {
-      const customers = await this.getCustomers();
-      if (customers.success && customers.data) {
-        for (const customer of customers.data) {
-          if (customer.robots && customer.robots.length > 0) {
-            const robotIndex = customer.robots.findIndex(robot => robot._id === robotId);
-            if (robotIndex !== -1) {
-              customer.robots[robotIndex] = { ...customer.robots[robotIndex], ...robotData };
-              const result = await this.updateCustomer(customer._id, customer);
-              if (result.success) {
-                return { success: true, data: customer.robots[robotIndex] };
-              }
-            }
-          }
-        }
+      const result = await this.request(`/robots/${robotId}`, {
+        method: 'PUT',
+        body: JSON.stringify(robotData),
+      });
+      
+      if (result.success) {
+        return { success: true, data: result.data };
       }
-      return { success: false, message: 'Robot not found' };
+      return { success: false, message: result.message || 'Failed to update robot' };
     } catch (error) {
       console.error('Error updating robot:', error);
       return { success: false, message: 'Failed to update robot' };
@@ -246,24 +220,16 @@ class ApiService {
   }
 
   async deleteRobot(robotId) {
-    // Remove robot from customer data
+    // Delete robot using the dedicated robot endpoint
     try {
-      const customers = await this.getCustomers();
-      if (customers.success && customers.data) {
-        for (const customer of customers.data) {
-          if (customer.robots && customer.robots.length > 0) {
-            const robotIndex = customer.robots.findIndex(robot => robot._id === robotId);
-            if (robotIndex !== -1) {
-              customer.robots.splice(robotIndex, 1);
-              const result = await this.updateCustomer(customer._id, customer);
-              if (result.success) {
-                return { success: true, message: 'Robot deleted successfully' };
-              }
-            }
-          }
-        }
+      const result = await this.request(`/robots/${robotId}`, {
+        method: 'DELETE',
+      });
+      
+      if (result.success) {
+        return { success: true, message: 'Robot deleted successfully' };
       }
-      return { success: false, message: 'Robot not found' };
+      return { success: false, message: result.message || 'Failed to delete robot' };
     } catch (error) {
       console.error('Error deleting robot:', error);
       return { success: false, message: 'Failed to delete robot' };
