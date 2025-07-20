@@ -92,13 +92,7 @@ const LoginScreen = ({ onLogin }) => {
             </Button>
           </form>
 
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Demo Credentials:</p>
-            <div className="text-xs space-y-1">
-              <p><strong>Technician:</strong> tech@company.com / password123</p>
-              <p><strong>Administrator:</strong> admin@company.com / password123</p>
-            </div>
-          </div>
+
         </CardContent>
       </Card>
     </div>

@@ -33,8 +33,13 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
         apiService.getInspections()
       ])
       
-      setCustomers(customersResponse.customers || customersResponse || [])
-      setInspections(inspectionsResponse.inspections || inspectionsResponse || [])
+      // Safely extract data arrays with fallbacks
+      const customersData = customersResponse?.data || customersResponse?.customers || customersResponse || []
+      const inspectionsData = inspectionsResponse?.data || inspectionsResponse?.inspections || inspectionsResponse || []
+      
+      // Ensure we have arrays
+      setCustomers(Array.isArray(customersData) ? customersData : [])
+      setInspections(Array.isArray(inspectionsData) ? inspectionsData : [])
     } catch (error) {
       console.error('Error loading dashboard data:', error)
       setError('Failed to load dashboard data. Please try again.')
@@ -408,7 +413,7 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 sm:space-y-4">
-                  {inspections.map((item) => (
+                  {Array.isArray(inspections) && inspections.length > 0 ? inspections.map((item) => (
                     <div key={item.id} className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                       {/* Mobile Layout */}
                       <div className="sm:hidden">
@@ -485,7 +490,13 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                         </div>
                       </div>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                      <p className="text-sm">No recent maintenance activities</p>
+                      <p className="text-xs text-gray-400 mt-1">Start a new maintenance session to see activities here</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
