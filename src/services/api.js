@@ -1,7 +1,7 @@
 // API Service Layer for Field Maintenance Application
 // Handles all communication with the backend API
 
-const API_BASE_URL = 'https://e5h6i7cny6dn.manus.space/api/v1';
+const API_BASE_URL = 'https://field-maintenance-backend.vercel.app/api/v1';
 
 class ApiService {
   constructor() {
