@@ -519,7 +519,7 @@ const CustomerForm = ({ user, mode }) => {
                       </SelectTrigger>
                       <SelectContent>
                         {technicians.map((tech) => (
-                          <SelectItem key={tech} value={tech}>{tech}</SelectItem>
+                          <SelectItem key={tech || ''} value={tech || ''}>{tech || 'Unknown'}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -602,7 +602,7 @@ const CustomerForm = ({ user, mode }) => {
                         <div>
                           <Label>Robot Type</Label>
                           <Select 
-                            value={robot.typeId.toString()} 
+                            value={robot.typeId ? robot.typeId.toString() : ''} 
                             onValueChange={(value) => handleRobotChange(robot.id, 'typeId', value)}
                           >
                             <SelectTrigger>
@@ -610,7 +610,7 @@ const CustomerForm = ({ user, mode }) => {
                             </SelectTrigger>
                             <SelectContent>
                               {availableRobotTypes.map((type) => (
-                                <SelectItem key={type.id} value={type.id.toString()}>
+                                <SelectItem key={type.id} value={type.id ? type.id.toString() : ''}>
                                   {type.name}
                                 </SelectItem>
                               ))}
