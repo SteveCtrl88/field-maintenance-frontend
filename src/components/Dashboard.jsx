@@ -241,92 +241,77 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 sm:space-y-4">
-                  {[
-                    {
-                      id: 1,
-                      customer: 'Acme Corporation',
-                      address: '123 Business Ave, New York, NY',
-                      robots: 3,
-                      daysUntil: 0,
-                      scheduled: '2025-07-20',
-                      technician: 'John Smith'
-                    },
-                    {
-                      id: 2,
-                      customer: 'Tech Solutions Inc',
-                      address: '456 Innovation Blvd, San Francisco, CA',
-                      robots: 2,
-                      daysUntil: 2,
-                      scheduled: '2025-07-22',
-                      technician: 'John Smith'
-                    },
-                    {
-                      id: 3,
-                      customer: 'Global Industries',
-                      address: '789 Corporate Dr, Chicago, IL',
-                      robots: 5,
-                      daysUntil: -1,
-                      scheduled: '2025-07-19',
-                      technician: 'Sarah Wilson'
-                    }
-                  ].map((visit) => (
-                    <div key={visit.id} className={`p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition-colors ${visit.daysUntil < 0 ? 'border-red-200 bg-red-50' : ''}`}>
-                      {/* Mobile Layout */}
-                      <div className="sm:hidden">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center space-x-2">
-                            <div className={`p-1.5 rounded-full ${visit.daysUntil < 0 ? 'bg-red-100' : visit.daysUntil === 0 ? 'bg-green-100' : 'bg-blue-100'}`}>
-                              <MapPin className={`h-3 w-3 ${visit.daysUntil < 0 ? 'text-red-600' : visit.daysUntil === 0 ? 'text-green-600' : 'text-blue-600'}`} />
+                  {Array.isArray(customers) && customers.length > 0 ? customers.slice(0, 3).map((customer) => {
+                    // Calculate days until next inspection
+                    const today = new Date()
+                    const nextInspection = customer.inspection_schedule?.next_inspection ? new Date(customer.inspection_schedule.next_inspection) : null
+                    const daysUntil = nextInspection ? Math.ceil((nextInspection - today) / (1000 * 60 * 60 * 24)) : null
+                    
+                    return (
+                      <div key={customer.id} className={`p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition-colors ${daysUntil !== null && daysUntil < 0 ? 'border-red-200 bg-red-50' : ''}`}>
+                        {/* Mobile Layout */}
+                        <div className="sm:hidden">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              <div className={`p-1.5 rounded-full ${daysUntil !== null && daysUntil < 0 ? 'bg-red-100' : daysUntil === 0 ? 'bg-green-100' : 'bg-blue-100'}`}>
+                                <MapPin className={`h-3 w-3 ${daysUntil !== null && daysUntil < 0 ? 'text-red-600' : daysUntil === 0 ? 'text-green-600' : 'text-blue-600'}`} />
+                              </div>
+                              <div className="font-medium text-sm">{customer.name}</div>
                             </div>
-                            <div className="font-medium text-sm">{visit.customer}</div>
-                          </div>
-                          <div className={`text-xs font-medium px-2 py-1 rounded ${visit.daysUntil < 0 ? 'text-red-600 bg-red-100' : visit.daysUntil === 0 ? 'text-green-600 bg-green-100' : 'text-blue-600 bg-blue-100'}`}>
-                            {visit.daysUntil < 0 ? 'OVERDUE' : visit.daysUntil === 0 ? 'TODAY' : `${visit.daysUntil} days`}
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-600 mb-2">{visit.address}</div>
-                        <div className="flex items-center justify-between">
-                          <div className="text-xs text-gray-500">
-                            {visit.robots} robots • {visit.technician}
-                          </div>
-                          <Button variant="outline" size="sm" onClick={() => handleViewCustomer(visit)} className="h-8 text-xs">
-                            <Eye className="h-3 w-3 mr-1" />
-                            View
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {/* Desktop Layout */}
-                      <div className="hidden sm:flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className={`p-2 rounded-full ${visit.daysUntil < 0 ? 'bg-red-100' : visit.daysUntil === 0 ? 'bg-green-100' : 'bg-blue-100'}`}>
-                            <MapPin className={`h-4 w-4 ${visit.daysUntil < 0 ? 'text-red-600' : visit.daysUntil === 0 ? 'text-green-600' : 'text-blue-600'}`} />
-                          </div>
-                          <div>
-                            <div className="font-medium">{visit.customer}</div>
-                            <div className="text-sm text-gray-600">{visit.address}</div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {visit.robots} robots • Assigned to {visit.technician}
+                            <div className={`text-xs font-medium px-2 py-1 rounded ${daysUntil !== null && daysUntil < 0 ? 'text-red-600 bg-red-100' : daysUntil === 0 ? 'text-green-600 bg-green-100' : 'text-blue-600 bg-blue-100'}`}>
+                              {daysUntil !== null ? (daysUntil < 0 ? 'OVERDUE' : daysUntil === 0 ? 'TODAY' : `${daysUntil} days`) : 'Not scheduled'}
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <div className="text-right">
-                            <div className={`text-sm font-medium ${visit.daysUntil < 0 ? 'text-red-600' : visit.daysUntil === 0 ? 'text-green-600' : 'text-blue-600'}`}>
-                              {visit.daysUntil < 0 ? 'OVERDUE' : visit.daysUntil === 0 ? 'TODAY' : `${visit.daysUntil} days`}
-                            </div>
+                          <div className="text-xs text-gray-600 mb-2">{customer.address}</div>
+                          <div className="flex items-center justify-between">
                             <div className="text-xs text-gray-500">
-                              {visit.scheduled}
+                              {customer.robots?.length || 0} robots • {customer.inspection_schedule?.assigned_technician || 'Unassigned'}
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => handleViewCustomer(customer)} className="h-8 text-xs">
+                              <Eye className="h-3 w-3 mr-1" />
+                              View
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        {/* Desktop Layout */}
+                        <div className="hidden sm:flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <div className={`p-2 rounded-full ${daysUntil !== null && daysUntil < 0 ? 'bg-red-100' : daysUntil === 0 ? 'bg-green-100' : 'bg-blue-100'}`}>
+                              <MapPin className={`h-4 w-4 ${daysUntil !== null && daysUntil < 0 ? 'text-red-600' : daysUntil === 0 ? 'text-green-600' : 'text-blue-600'}`} />
+                            </div>
+                            <div>
+                              <div className="font-medium">{customer.name}</div>
+                              <div className="text-sm text-gray-600">{customer.address}</div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {customer.robots?.length || 0} robots • Assigned to {customer.inspection_schedule?.assigned_technician || 'Unassigned'}
+                              </div>
                             </div>
                           </div>
-                          <Button variant="outline" size="sm" onClick={() => handleViewCustomer(visit)}>
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
+                          <div className="flex items-center space-x-3">
+                            <div className="text-right">
+                              <div className={`text-sm font-medium ${daysUntil !== null && daysUntil < 0 ? 'text-red-600' : daysUntil === 0 ? 'text-green-600' : 'text-blue-600'}`}>
+                                {daysUntil !== null ? (daysUntil < 0 ? 'OVERDUE' : daysUntil === 0 ? 'TODAY' : `${daysUntil} days`) : 'Not scheduled'}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {nextInspection ? nextInspection.toISOString().split('T')[0] : 'No date set'}
+                              </div>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => handleViewCustomer(customer)}>
+                              <Eye className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                          </div>
                         </div>
                       </div>
+                    )
+                  }) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p>No upcoming visits scheduled</p>
+                      <p className="text-sm">Add customers to see scheduled maintenance visits</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>
