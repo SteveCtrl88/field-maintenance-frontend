@@ -209,6 +209,16 @@ function App() {
             } 
           />
           <Route 
+            path="/robots" 
+            element={
+              isAuthenticated ? 
+                <RobotTypes 
+                  user={currentUser}
+                /> : 
+                <Navigate to="/login" replace />
+            } 
+          />
+          <Route 
             path="/robot-types" 
             element={
               isAuthenticated ? 

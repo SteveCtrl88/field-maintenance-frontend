@@ -44,87 +44,13 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
       console.error('Error loading dashboard data:', error)
       setError('Failed to load dashboard data. Please try again.')
       
-      // Fallback to mock data if API fails
-      setCustomers(getMockCustomers())
-      setInspections(getMockInspections())
+      // Set empty arrays on error
+      setCustomers([])
+      setInspections([])
     } finally {
       setLoading(false)
     }
   }
-
-  // Mock data fallback
-  const getMockCustomers = () => [
-    {
-      id: 1,
-      name: 'Acme Corporation',
-      address: '123 Business Ave, New York, NY',
-      contact: 'John Doe',
-      phone: '(555) 123-4567',
-      robots: [
-        { id: 1, serialNumber: 'RBT-001', model: 'ServiceBot Pro', status: 'active' },
-        { id: 2, serialNumber: 'RBT-002', model: 'ServiceBot Pro', status: 'maintenance' }
-      ],
-      nextVisit: '2025-07-21',
-      technician: 'John Smith',
-      status: 'scheduled'
-    },
-    {
-      id: 2,
-      name: 'Tech Solutions Inc',
-      address: '456 Innovation Dr, San Francisco, CA',
-      contact: 'Jane Smith',
-      phone: '(555) 987-6543',
-      robots: [
-        { id: 3, serialNumber: 'RBT-045', model: 'ServiceBot Elite', status: 'active' }
-      ],
-      nextVisit: '2025-07-22',
-      technician: 'Mike Johnson',
-      status: 'in_progress'
-    },
-    {
-      id: 3,
-      name: 'Global Industries',
-      address: '789 Corporate Blvd, Chicago, IL',
-      contact: 'Bob Wilson',
-      phone: '(555) 456-7890',
-      robots: [
-        { id: 4, serialNumber: 'RBT-023', model: 'ServiceBot Standard', status: 'active' }
-      ],
-      nextVisit: '2025-07-23',
-      technician: 'Sarah Davis',
-      status: 'completed'
-    }
-  ]
-
-  const getMockInspections = () => [
-    { 
-      id: 1, 
-      robotSerial: 'RBT-001', 
-      status: 'completed', 
-      date: '2025-07-19', 
-      customer: 'Acme Corp',
-      progress: 100,
-      technician: 'John Smith'
-    },
-    { 
-      id: 2, 
-      robotSerial: 'RBT-045', 
-      status: 'in_progress', 
-      date: '2025-07-19', 
-      customer: 'Tech Solutions',
-      progress: 65,
-      technician: 'John Smith'
-    },
-    { 
-      id: 3, 
-      robotSerial: 'RBT-023', 
-      status: 'completed', 
-      date: '2025-07-18', 
-      customer: 'Global Industries',
-      progress: 100,
-      technician: 'John Smith'
-    }
-  ]
 
   const handleStartMaintenance = () => {
     onNewMaintenance()

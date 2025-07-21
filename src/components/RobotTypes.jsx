@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,70 +20,36 @@ import {
   Save,
   X
 } from 'lucide-react'
+import apiService from '../services/api'
 
 const RobotTypes = ({ user }) => {
   const navigate = useNavigate()
-  const [robotTypes, setRobotTypes] = useState([
-    {
-      id: 1,
-      name: 'ServiceBot Pro X1',
-      description: 'Advanced service robot with AI capabilities and multi-sensor array',
-      manufacturer: 'RoboTech Industries',
-      model: 'SB-PRX1',
-      image: '/api/placeholder/200/150',
-      specifications: {
-        height: '1.2m',
-        weight: '45kg',
-        battery: '8 hours',
-        sensors: 'LiDAR, Camera, Ultrasonic'
-      },
-      maintenanceItems: [
-        'Display functionality check',
-        'Charging system inspection',
-        'Door mechanism test',
-        'Sensor calibration'
-      ]
-    },
-    {
-      id: 2,
-      name: 'ServiceBot Pro X2',
-      description: 'Enhanced version with improved navigation and extended battery life',
-      manufacturer: 'RoboTech Industries',
-      model: 'SB-PRX2',
-      image: '/api/placeholder/200/150',
-      specifications: {
-        height: '1.3m',
-        weight: '52kg',
-        battery: '12 hours',
-        sensors: 'LiDAR, Stereo Camera, IMU'
-      },
-      maintenanceItems: [
-        'Display functionality check',
-        'Charging system inspection',
-        'Advanced door mechanism test',
-        'Navigation system check'
-      ]
-    },
-    {
-      id: 3,
-      name: 'ServiceBot Lite',
-      description: 'Compact and cost-effective solution for basic service tasks',
-      manufacturer: 'RoboTech Industries',
-      model: 'SB-LITE',
-      image: '/api/placeholder/200/150',
-      specifications: {
-        height: '0.9m',
-        weight: '28kg',
-        battery: '6 hours',
-        sensors: 'Camera, Proximity'
-      },
-      maintenanceItems: [
-        'Basic functionality check',
-        'Charging system inspection',
-        'Simple door test'
-      ]
+  const [robotTypes, setRobotTypes] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  // Load robot types from Firebase
+  useEffect(() => {
+    const loadRobotTypes = async () => {
+      try {
+        setLoading(true)
+        const result = await apiService.getRobots()
+        if (result.success) {
+          setRobotTypes(result.data || [])
+        } else {
+          console.error('Failed to load robot types:', result.error)
+          // Fallback to empty array
+          setRobotTypes([])
+        }
+      } catch (error) {
+        console.error('Error loading robot types:', error)
+        setRobotTypes([])
+      } finally {
+        setLoading(false)
+      }
     }
-  ])
+    
+    loadRobotTypes()
+  }, [])
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingType, setEditingType] = useState(null)
