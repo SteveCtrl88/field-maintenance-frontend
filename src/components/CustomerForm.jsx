@@ -22,7 +22,7 @@ import {
   ExternalLink,
   Camera
 } from 'lucide-react'
-import { apiService } from '../services/api'
+import apiService from '../services/api'
 
 const CustomerForm = ({ user, mode }) => {
   const navigate = useNavigate()
@@ -209,6 +209,9 @@ const CustomerForm = ({ user, mode }) => {
   const handleSave = async () => {
     try {
       setSaving(true)
+      
+      // Define action text for logging
+      const actionText = isEditing ? 'Updating' : 'Creating'
       
       // Prepare the data for the API
       const customerData = {

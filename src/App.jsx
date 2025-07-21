@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import LoginScreen from './components/LoginScreen'
 import Dashboard from './components/Dashboard'
@@ -12,6 +12,8 @@ import CustomerDetails from './components/CustomerDetails'
 import RobotTypes from './components/RobotTypes'
 import UserManagement from './components/UserManagement'
 import Reports from './components/Reports'
+import authService from './services/auth.js'
+import firebaseAuthService from './services/firebase.js'
 import './App.css'
 
 function App() {
@@ -20,12 +22,35 @@ function App() {
   const [scannedRobot, setScannedRobot] = useState(null)
   const [maintenanceSession, setMaintenanceSession] = useState(null)
 
+  // Initialize Firebase Auth and listen for auth state changes
+  useEffect(() => {
+    console.log('Initializing Firebase Auth...');
+    
+    // Make Firebase services available globally for debugging
+    window.firebaseAuthService = firebaseAuthService;
+    window.authService = authService;
+    
+    // Listen for auth state changes
+    const unsubscribe = authService.addListener((authState) => {
+      console.log('Auth state changed:', authState);
+      setIsAuthenticated(authState.isAuthenticated);
+      setCurrentUser(authState.user);
+    });
+
+    return () => {
+      if (unsubscribe) {
+        authService.removeListener(unsubscribe);
+      }
+    };
+  }, []);
+
   const handleLogin = (user) => {
     setIsAuthenticated(true)
     setCurrentUser(user)
   }
 
   const handleLogout = () => {
+    authService.logout();
     setIsAuthenticated(false)
     setCurrentUser(null)
     setScannedRobot(null)

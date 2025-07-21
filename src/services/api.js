@@ -80,8 +80,10 @@ class ApiService {
       body: JSON.stringify(payload),
     });
     
-    if (response.token) {
-      this.setToken(response.token);
+    // Handle both response.token and response.data.token formats
+    const token = response.token || (response.data && response.data.token);
+    if (token) {
+      this.setToken(token);
     }
     
     return response;
