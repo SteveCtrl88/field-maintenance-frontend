@@ -103,30 +103,40 @@ const RobotTypes = ({ user }) => {
 
   const handleSave = async () => {
     try {
+      console.log('Saving robot type with data:', formData)
+      
       if (editingType) {
         // Update existing
+        console.log('Updating robot type:', editingType.id)
         const result = await apiService.updateRobotType(editingType.id, formData)
+        console.log('Update result:', result)
+        
         if (result.success) {
-          setRobotTypes(prev => prev.map(type => 
-            type.id === editingType.id 
-              ? { ...type, ...result.data }
-              : type
-          ))
+          console.log('Update successful, refreshing list')
+          // Refresh the entire list to ensure we get the latest data
+          await loadRobotTypes()
         } else {
           console.error('Failed to update robot type:', result.error)
+          alert('Failed to update robot type: ' + (result.error || 'Unknown error'))
         }
       } else {
         // Add new
+        console.log('Creating new robot type')
         const result = await apiService.createRobotType(formData)
+        console.log('Create result:', result)
+        
         if (result.success) {
-          setRobotTypes(prev => [...prev, result.data])
+          console.log('Create successful, refreshing list')
+          await loadRobotTypes()
         } else {
           console.error('Failed to create robot type:', result.error)
+          alert('Failed to create robot type: ' + (result.error || 'Unknown error'))
         }
       }
       setIsDialogOpen(false)
     } catch (error) {
       console.error('Error saving robot type:', error)
+      alert('Error saving robot type: ' + error.message)
     }
   }
 
