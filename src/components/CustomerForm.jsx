@@ -36,6 +36,7 @@ const CustomerForm = ({ user, mode }) => {
     phone: '',
     email: '',
     notes: '',
+    profilePicture: '',
     inspectionWeek: '1', // 1st, 2nd, 3rd, 4th week
     inspectionDay: 'monday',
     technician: '',
@@ -70,6 +71,7 @@ const CustomerForm = ({ user, mode }) => {
         phone: '',
         email: '',
         notes: '',
+        profilePicture: '',
         inspectionWeek: '1',
         inspectionDay: 'monday',
         technician: '',
@@ -94,13 +96,14 @@ const CustomerForm = ({ user, mode }) => {
             phone: '',
             email: '',
             notes: '',
+            profilePicture: '',
             inspectionWeek: '1',
             inspectionDay: 'monday',
             technician: '',
             robots: []
           })
           
-          const response = await fetch(`https://mzhyi8cn9kze.manus.space/api/v1/customers/${id}`)
+          const response = await fetch(`https://8xhpiqclxe8y.manus.space/api/v1/customers/${id}`)
           const result = await response.json()
           
           console.log('API Response for customer', id, ':', result)
@@ -117,6 +120,7 @@ const CustomerForm = ({ user, mode }) => {
               phone: customer.phone || '',
               email: customer.email || '',
               notes: customer.notes || '',
+              profilePicture: customer.profile_picture || '',
               inspectionWeek: customer.inspection_schedule?.week_of_month?.replace(/\D/g, '') || '1',
               inspectionDay: customer.inspection_schedule?.day_of_week?.toLowerCase() || 'monday',
               technician: customer.inspection_schedule?.assigned_technician || '',
@@ -143,6 +147,32 @@ const CustomerForm = ({ user, mode }) => {
       ...prev,
       [field]: value
     }))
+  }
+
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      // Check file size (limit to 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB')
+        return
+      }
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file')
+        return
+      }
+      
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setFormData(prev => ({
+          ...prev,
+          profilePicture: e.target.result
+        }))
+      }
+      reader.readAsDataURL(file)
+    }
   }
 
   const handleAddRobot = () => {
@@ -189,6 +219,7 @@ const CustomerForm = ({ user, mode }) => {
         phone: formData.phone,
         email: formData.email,
         notes: formData.notes,
+        profile_picture: formData.profilePicture,
         inspection_schedule: {
           week_of_month: formData.inspectionWeek === '1' ? '1st' : 
                          formData.inspectionWeek === '2' ? '2nd' :
@@ -199,12 +230,12 @@ const CustomerForm = ({ user, mode }) => {
         robots: formData.robots
       }
 
-      let url = 'https://mzhyi8cn9kze.manus.space/api/v1/customers'
+      let url = 'https://8xhpiqclxe8y.manus.space/api/v1/customers'
       let method = 'POST'
       let actionText = 'Creating'
 
       if (isEditing && id) {
-        url = `https://mzhyi8cn9kze.manus.space/api/v1/customers/${id}`
+        url = `https://8xhpiqclxe8y.manus.space/api/v1/customers/${id}`
         method = 'PUT'
         actionText = 'Updating'
       }
@@ -323,6 +354,52 @@ const CustomerForm = ({ user, mode }) => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Profile Picture Upload */}
+                  <div>
+                    <Label htmlFor="profilePicture">Profile Picture</Label>
+                    <div className="flex items-center space-x-4">
+                      {formData.profilePicture ? (
+                        <div className="relative">
+                          <img 
+                            src={formData.profilePicture} 
+                            alt="Profile" 
+                            className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                            onClick={() => handleInputChange('profilePicture', '')}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="w-16 h-16 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
+                          <Camera className="w-6 h-6 text-gray-400" />
+                        </div>
+                      )}
+                      <div>
+                        <Input
+                          id="profilePicture"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleProfilePictureChange}
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('profilePicture').click()}
+                        >
+                          <Camera className="w-4 h-4 mr-2" />
+                          {formData.profilePicture ? 'Change Picture' : 'Upload Picture'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="name">Company Name</Label>

@@ -27,7 +27,7 @@ const CustomerDetails = ({ user }) => {
     const fetchCustomer = async () => {
       try {
         setLoading(true)
-        const response = await fetch(`https://nghki1clpnz3.manus.space/api/v1/customers/${id}`)
+        const response = await fetch(`https://8xhpiqclxe8y.manus.space/api/v1/customers/${id}`)
         const result = await response.json()
         
         if (result.success && result.data) {
@@ -121,13 +121,34 @@ const CustomerDetails = ({ user }) => {
             <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
+                  <div className="flex items-center space-x-4 mb-4">
+                    {/* Profile Picture */}
+                    <div className="flex-shrink-0">
+                      {customer.profile_picture ? (
+                        <img 
+                          src={customer.profile_picture} 
+                          alt={`${customer.name} profile`}
+                          className="w-20 h-20 rounded-full object-cover border-4 border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 rounded-full bg-gray-100 border-4 border-gray-200 flex items-center justify-center">
+                          <User className="w-10 h-10 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <CardTitle className="flex items-center text-2xl">
+                        {customer.name}
+                      </CardTitle>
+                      <CardDescription className="text-lg">
+                        Customer contact and location details
+                      </CardDescription>
+                    </div>
+                  </div>
                   <CardTitle className="flex items-center">
                     <User className="w-5 h-5 mr-2" />
                     Basic Information
                   </CardTitle>
-                  <CardDescription>
-                    Customer contact and location details
-                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

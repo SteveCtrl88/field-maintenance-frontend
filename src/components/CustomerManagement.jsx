@@ -32,7 +32,7 @@ const CustomerManagement = ({ user }) => {
     const fetchCustomers = async () => {
       try {
         setLoading(true)
-        const response = await fetch('https://mzhyi8cn9kze.manus.space/api/v1/customers')
+        const response = await fetch('https://8xhpiqclxe8y.manus.space/api/v1/customers')
         const result = await response.json()
         
         if (result.success) {
@@ -44,6 +44,7 @@ const CustomerManagement = ({ user }) => {
             contactPerson: customer.contact_person || '',
             phone: customer.phone || '',
             email: customer.email || '',
+            profilePicture: customer.profile_picture || '',
             robotCount: 0, // Will be updated when robot API is available
             technician: customer.inspection_schedule?.assigned_technician || '',
             inspectionFrequency: customer.inspection_schedule ? 
@@ -68,7 +69,7 @@ const CustomerManagement = ({ user }) => {
 
   const handleDeleteCustomer = async (customerId) => {
     try {
-      const response = await fetch(`https://mzhyi8cn9kze.manus.space/api/v1/customers/${customerId}`, {
+      const response = await fetch(`https://8xhpiqclxe8y.manus.space/api/v1/customers/${customerId}`, {
         method: 'DELETE'
       })
       
@@ -191,12 +192,28 @@ const CustomerManagement = ({ user }) => {
             <Card key={customer.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg">{customer.name}</CardTitle>
-                    <CardDescription className="flex items-center mt-1">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      {customer.address}
-                    </CardDescription>
+                  <div className="flex items-center space-x-3">
+                    {/* Profile Picture */}
+                    <div className="flex-shrink-0">
+                      {customer.profilePicture ? (
+                        <img 
+                          src={customer.profilePicture} 
+                          alt={`${customer.name} profile`}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
+                          <User className="w-6 h-6 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{customer.name}</CardTitle>
+                      <CardDescription className="flex items-center mt-1">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        {customer.address}
+                      </CardDescription>
+                    </div>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Badge className={getStatusColor(customer.status)}>
