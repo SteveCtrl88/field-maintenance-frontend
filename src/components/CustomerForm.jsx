@@ -676,3 +676,4 @@ const CustomerForm = ({ user, mode }) => {
 
 export default CustomerForm
 
+// Fixed React import
