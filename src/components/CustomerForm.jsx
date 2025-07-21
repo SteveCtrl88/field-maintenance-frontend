@@ -58,6 +58,26 @@ const CustomerForm = ({ user, mode }) => {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
 
+  // Reset form data when component mounts or ID changes
+  useEffect(() => {
+    if (!isEditing) {
+      // Reset form for new customer
+      setFormData({
+        name: '',
+        address: '',
+        googleMapsLink: '',
+        contactPerson: '',
+        phone: '',
+        email: '',
+        notes: '',
+        inspectionWeek: '1',
+        inspectionDay: 'monday',
+        technician: '',
+        robots: []
+      })
+    }
+  }, [isEditing, id])
+
   // Fetch customer data for editing
   useEffect(() => {
     if (isEditing && id) {
@@ -65,7 +85,22 @@ const CustomerForm = ({ user, mode }) => {
       const fetchCustomer = async () => {
         try {
           setLoading(true)
-          const response = await fetch(`https://nghki1clpnz3.manus.space/api/v1/customers/${id}`)
+          // Clear previous data first
+          setFormData({
+            name: '',
+            address: '',
+            googleMapsLink: '',
+            contactPerson: '',
+            phone: '',
+            email: '',
+            notes: '',
+            inspectionWeek: '1',
+            inspectionDay: 'monday',
+            technician: '',
+            robots: []
+          })
+          
+          const response = await fetch(`https://mzhyi8cn9kze.manus.space/api/v1/customers/${id}`)
           const result = await response.json()
           
           console.log('API Response for customer', id, ':', result)
@@ -101,7 +136,7 @@ const CustomerForm = ({ user, mode }) => {
       
       fetchCustomer()
     }
-  }, [isEditing, id])
+  }, [isEditing, id]) // Added id to dependency array
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -164,12 +199,12 @@ const CustomerForm = ({ user, mode }) => {
         robots: formData.robots
       }
 
-      let url = 'https://nghki1clpnz3.manus.space/api/v1/customers'
+      let url = 'https://mzhyi8cn9kze.manus.space/api/v1/customers'
       let method = 'POST'
       let actionText = 'Creating'
 
       if (isEditing && id) {
-        url = `https://nghki1clpnz3.manus.space/api/v1/customers/${id}`
+        url = `https://mzhyi8cn9kze.manus.space/api/v1/customers/${id}`
         method = 'PUT'
         actionText = 'Updating'
       }

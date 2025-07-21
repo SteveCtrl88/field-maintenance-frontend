@@ -15,7 +15,8 @@ import {
   Mail, 
   Calendar,
   Bot,
-  User
+  User,
+  Trash2
 } from 'lucide-react'
 
 const CustomerManagement = ({ user }) => {
@@ -24,13 +25,14 @@ const CustomerManagement = ({ user }) => {
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [deleteConfirm, setDeleteConfirm] = useState(null) // { id, name }
 
   // Fetch customers from API
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
         setLoading(true)
-        const response = await fetch('https://nghki1clpnz3.manus.space/api/v1/customers')
+        const response = await fetch('https://mzhyi8cn9kze.manus.space/api/v1/customers')
         const result = await response.json()
         
         if (result.success) {
@@ -51,11 +53,11 @@ const CustomerManagement = ({ user }) => {
           }))
           setCustomers(transformedCustomers)
         } else {
-          setError('Failed to fetch customers')
+          setError('Failed to load customers')
         }
-      } catch (err) {
-        setError('Error fetching customers: ' + err.message)
-        console.error('Error fetching customers:', err)
+      } catch (error) {
+        console.error('Error fetching customers:', error)
+        setError('Error loading customers')
       } finally {
         setLoading(false)
       }
@@ -63,6 +65,36 @@ const CustomerManagement = ({ user }) => {
 
     fetchCustomers()
   }, [])
+
+  const handleDeleteCustomer = async (customerId) => {
+    try {
+      const response = await fetch(`https://mzhyi8cn9kze.manus.space/api/v1/customers/${customerId}`, {
+        method: 'DELETE'
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        // Remove customer from local state
+        setCustomers(prev => prev.filter(customer => customer.id !== customerId))
+        setDeleteConfirm(null)
+        alert('Customer deleted successfully!')
+      } else {
+        alert('Failed to delete customer: ' + (result.message || 'Unknown error'))
+      }
+    } catch (error) {
+      console.error('Error deleting customer:', error)
+      alert('Error deleting customer: ' + error.message)
+    }
+  }
+
+  const confirmDelete = (customer) => {
+    setDeleteConfirm({ id: customer.id, name: customer.name })
+  }
+
+  const cancelDelete = () => {
+    setDeleteConfirm(null)
+  }
 
   const filteredCustomers = customers.filter(customer =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -178,6 +210,15 @@ const CustomerManagement = ({ user }) => {
                       <Edit className="h-3 w-3 mr-1" />
                       Edit
                     </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => confirmDelete(customer)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Delete
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -229,6 +270,36 @@ const CustomerManagement = ({ user }) => {
           )}
         </div>
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Delete Customer
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to delete <strong>{deleteConfirm.name}</strong>? 
+              This action cannot be undone and will also delete all associated robots.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <Button 
+                variant="outline" 
+                onClick={cancelDelete}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={() => handleDeleteCustomer(deleteConfirm.id)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Customer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
