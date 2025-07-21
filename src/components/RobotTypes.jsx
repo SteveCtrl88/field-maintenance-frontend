@@ -28,26 +28,26 @@ const RobotTypes = ({ user }) => {
   const [loading, setLoading] = useState(true)
 
   // Load robot types from Firebase
-  useEffect(() => {
-    const loadRobotTypes = async () => {
-      try {
-        setLoading(true)
-        const result = await apiService.getRobotTypes()
-        if (result.success) {
-          setRobotTypes(result.data || [])
-        } else {
-          console.error('Failed to load robot types:', result.error)
-          // Fallback to empty array
-          setRobotTypes([])
-        }
-      } catch (error) {
-        console.error('Error loading robot types:', error)
+  const loadRobotTypes = async () => {
+    try {
+      setLoading(true)
+      const result = await apiService.getRobotTypes()
+      if (result.success) {
+        setRobotTypes(result.data || [])
+      } else {
+        console.error('Failed to load robot types:', result.error)
+        // Fallback to empty array
         setRobotTypes([])
-      } finally {
-        setLoading(false)
       }
+    } catch (error) {
+      console.error('Error loading robot types:', error)
+      setRobotTypes([])
+    } finally {
+      setLoading(false)
     }
-    
+  }
+
+  useEffect(() => {
     loadRobotTypes()
   }, [])
 
