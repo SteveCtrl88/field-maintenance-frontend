@@ -77,7 +77,7 @@ const RobotTypes = ({ user }) => {
       model: robotType.model,
       image: robotType.image,
       specifications: { ...robotType.specifications },
-      maintenanceItems: [...robotType.maintenanceItems]
+      maintenanceItems: [...(robotType.maintenanceItems || [])]
     })
     setIsDialogOpen(true)
   }
