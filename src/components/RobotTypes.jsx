@@ -76,7 +76,7 @@ const RobotTypes = ({ user }) => {
       manufacturer: robotType.manufacturer,
       model: robotType.model,
       image: robotType.image,
-      specifications: { ...robotType.specifications },
+      specifications: { ...(robotType.specifications || {}) },
       maintenanceItems: [...(robotType.maintenanceItems || [])]
     })
     setIsDialogOpen(true)
@@ -295,19 +295,19 @@ const RobotTypes = ({ user }) => {
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
                         <span className="text-gray-500">Height:</span>
-                        <span className="ml-1">{robotType.specifications.height}</span>
+                        <span className="ml-1">{robotType.specifications?.height || ''}</span>
                       </div>
                       <div>
                         <span className="text-gray-500">Weight:</span>
-                        <span className="ml-1">{robotType.specifications.weight}</span>
+                        <span className="ml-1">{robotType.specifications?.weight || ''}</span>
                       </div>
                       <div>
                         <span className="text-gray-500">Battery:</span>
-                        <span className="ml-1">{robotType.specifications.battery}</span>
+                        <span className="ml-1">{robotType.specifications?.battery || ''}</span>
                       </div>
-                      <div className="col-span-2">
+                      <div>
                         <span className="text-gray-500">Sensors:</span>
-                        <span className="ml-1">{robotType.specifications.sensors}</span>
+                        <span className="ml-1">{robotType.specifications?.sensors || ''}</span>
                       </div>
                     </div>
                   </div>
@@ -453,7 +453,7 @@ const RobotTypes = ({ user }) => {
                   <Label htmlFor="height">Height</Label>
                   <Input
                     id="height"
-                    value={formData.specifications.height}
+                    value={formData.specifications?.height || ''}
                     onChange={(e) => handleInputChange('specifications.height', e.target.value)}
                     placeholder="e.g., 1.2m"
                   />
@@ -462,7 +462,7 @@ const RobotTypes = ({ user }) => {
                   <Label htmlFor="weight">Weight</Label>
                   <Input
                     id="weight"
-                    value={formData.specifications.weight}
+                    value={formData.specifications?.weight || ''}
                     onChange={(e) => handleInputChange('specifications.weight', e.target.value)}
                     placeholder="e.g., 45kg"
                   />
@@ -471,7 +471,7 @@ const RobotTypes = ({ user }) => {
                   <Label htmlFor="battery">Battery Life</Label>
                   <Input
                     id="battery"
-                    value={formData.specifications.battery}
+                    value={formData.specifications?.battery || ''}
                     onChange={(e) => handleInputChange('specifications.battery', e.target.value)}
                     placeholder="e.g., 8 hours"
                   />
@@ -480,7 +480,7 @@ const RobotTypes = ({ user }) => {
                   <Label htmlFor="sensors">Sensors</Label>
                   <Input
                     id="sensors"
-                    value={formData.specifications.sensors}
+                    value={formData.specifications?.sensors || ''}
                     onChange={(e) => handleInputChange('specifications.sensors', e.target.value)}
                     placeholder="e.g., LiDAR, Camera"
                   />
