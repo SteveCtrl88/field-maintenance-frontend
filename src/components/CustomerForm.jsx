@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,6 +22,7 @@ import {
   ExternalLink,
   Camera
 } from 'lucide-react'
+import { apiService } from '../services/api'
 
 const CustomerForm = ({ user, mode }) => {
   const navigate = useNavigate()
@@ -103,8 +104,7 @@ const CustomerForm = ({ user, mode }) => {
             robots: []
           })
           
-          const response = await fetch(`https://8xhpiqclxe8y.manus.space/api/v1/customers/${id}`)
-          const result = await response.json()
+          const result = await apiService.getCustomer(id)
           
           console.log('API Response for customer', id, ':', result)
           
@@ -230,31 +230,17 @@ const CustomerForm = ({ user, mode }) => {
         robots: formData.robots
       }
 
-      let url = 'https://8xhpiqclxe8y.manus.space/api/v1/customers'
-      let method = 'POST'
-      let actionText = 'Creating'
-
-      if (isEditing && id) {
-        url = `https://8xhpiqclxe8y.manus.space/api/v1/customers/${id}`
-        method = 'PUT'
-        actionText = 'Updating'
-      }
-
       console.log(`${actionText} customer with ID: ${id}`)
-      console.log('URL:', url)
-      console.log('Method:', method)
       console.log('Data:', customerData)
 
-      // Call the API
-      const response = await fetch(url, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(customerData)
-      })
-
-      const result = await response.json()
+      let result
+      if (isEditing && id) {
+        console.log('Updating customer via API service')
+        result = await apiService.updateCustomer(id, customerData)
+      } else {
+        console.log('Creating customer via API service')
+        result = await apiService.createCustomer(customerData)
+      }
       
       console.log('API Response:', result)
       
