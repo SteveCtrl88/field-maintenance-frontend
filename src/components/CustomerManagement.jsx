@@ -18,6 +18,7 @@ import {
   User,
   Trash2
 } from 'lucide-react'
+import apiService from '../services/api'
 
 const CustomerManagement = ({ user }) => {
   const navigate = useNavigate()
@@ -32,8 +33,7 @@ const CustomerManagement = ({ user }) => {
     const fetchCustomers = async () => {
       try {
         setLoading(true)
-        const response = await fetch('https://8xhpiqclxe8y.manus.space/api/v1/customers')
-        const result = await response.json()
+        const result = await apiService.getCustomers()
         
         if (result.success) {
           // Transform API data to match component expectations
@@ -45,7 +45,7 @@ const CustomerManagement = ({ user }) => {
             phone: customer.phone || '',
             email: customer.email || '',
             profilePicture: customer.profile_picture || '',
-            robotCount: 0, // Will be updated when robot API is available
+            robotCount: (customer.robots && customer.robots.length) || 0,
             technician: customer.inspection_schedule?.assigned_technician || '',
             inspectionFrequency: customer.inspection_schedule ? 
               `${customer.inspection_schedule.week_of_month} ${customer.inspection_schedule.day_of_week}` : '',
@@ -69,11 +69,7 @@ const CustomerManagement = ({ user }) => {
 
   const handleDeleteCustomer = async (customerId) => {
     try {
-      const response = await fetch(`https://8xhpiqclxe8y.manus.space/api/v1/customers/${customerId}`, {
-        method: 'DELETE'
-      })
-      
-      const result = await response.json()
+      const result = await apiService.deleteCustomer(customerId)
       
       if (result.success) {
         // Remove customer from local state

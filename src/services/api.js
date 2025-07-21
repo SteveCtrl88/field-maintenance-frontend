@@ -1,7 +1,7 @@
-// API Service Layer for Field Maintenance Application
-// Handles all communication with the backend API
+// API Service Layer for Field Maintenance// API Service
+// Handles all HTTP requests to the backend API
 
-const API_BASE_URL = 'https://77h9ikczp6n3.manus.space/api/v1';
+const API_BASE_URL = 'https://mzhyi8cn9v0x.manus.space/api/v1';
 
 class ApiService {
   constructor() {
@@ -70,10 +70,14 @@ class ApiService {
   }
 
   // Authentication endpoints
-  async login(email, password) {
+  async login(email, password, idToken = null) {
+    const payload = idToken ? 
+      { idToken } : 
+      { email, password };
+      
     const response = await this.request('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(payload),
     });
     
     if (response.token) {

@@ -1,5 +1,5 @@
-import { useNavigate, useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -14,6 +14,7 @@ import {
   User,
   ExternalLink
 } from 'lucide-react'
+import apiService from '../services/api'
 
 const CustomerDetails = ({ user }) => {
   const navigate = useNavigate()
@@ -27,8 +28,7 @@ const CustomerDetails = ({ user }) => {
     const fetchCustomer = async () => {
       try {
         setLoading(true)
-        const response = await fetch(`https://8xhpiqclxe8y.manus.space/api/v1/customers/${id}`)
-        const result = await response.json()
+        const result = await apiService.getCustomer(id)
         
         if (result.success && result.data) {
           setCustomer(result.data)

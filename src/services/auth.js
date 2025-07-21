@@ -1,7 +1,8 @@
 // Authentication Service
-// Handles user authentication state and JWT token management
+// Handles user authentication state and Firebase Auth integration
 
 import apiService from './api.js';
+import firebaseAuthService from './firebase.js';
 
 class AuthService {
   constructor() {
@@ -13,19 +14,26 @@ class AuthService {
     this.initializeAuth();
   }
 
-  // Initialize authentication state from stored token
+  // Initialize authentication state from Firebase Auth
   async initializeAuth() {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      try {
-        // Verify token is still valid by getting current user
-        const user = await apiService.getCurrentUser();
-        this.setUser(user);
-      } catch (error) {
-        console.error('Token validation failed:', error);
-        this.logout();
+    // Listen for Firebase Auth state changes
+    firebaseAuthService.addAuthStateListener((user) => {
+      if (user) {
+        // User is signed in
+        const userData = {
+          id: user.uid,
+          email: user.email,
+          name: user.displayName || user.email.split('@')[0],
+          role: user.email === 'admin@company.com' ? 'admin' : 'user'
+        };
+        this.setUser(userData);
+      } else {
+        // User is signed out
+        this.currentUser = null;
+        this.isAuthenticated = false;
+        this.notifyListeners();
       }
-    }
+    });
   }
 
   // Set current user and update authentication state
@@ -55,99 +63,54 @@ class AuthService {
     return this.currentUser && this.currentUser.role === 'technician';
   }
 
-  // Login user
+  // Login user with Firebase Auth
   async login(email, password) {
     try {
-      const response = await apiService.login(email, password);
+      // Use Firebase Auth for authentication
+      const result = await firebaseAuthService.signIn(email, password);
       
-      if (response.user) {
-        this.setUser(response.user);
-        return { success: true, user: response.user };
+      if (result.success) {
+        // Send ID token to backend for validation
+        try {
+          const backendResponse = await apiService.login('', '', result.idToken);
+          console.log('Backend validation successful:', backendResponse);
+        } catch (backendError) {
+          console.warn('Backend validation failed, but Firebase auth succeeded:', backendError);
+          // Continue with Firebase auth even if backend fails
+        }
+        
+        return { success: true, user: result.user };
       } else {
-        throw new Error('Login failed: No user data received');
+        return { success: false, error: result.error };
       }
     } catch (error) {
       console.error('Login error:', error);
-      
-      // Fallback to demo authentication if API fails
-      return this.fallbackLogin(email, password);
+      return { 
+        success: false, 
+        error: 'Login failed. Please check your credentials and try again.' 
+      };
     }
   }
 
-  // Fallback authentication for demo users
-  fallbackLogin(email, password) {
-    const demoUsers = {
-      'admin@company.com': {
-        id: 'demo-admin-1',
-        name: 'System Administrator',
-        email: 'admin@company.com',
-        role: 'admin',
-        isActive: true,
-        lastLogin: new Date().toISOString(),
-        profile: {
-          phone: '(555) 123-4567',
-          department: 'Administration'
-        }
-      },
-      'tech@company.com': {
-        id: 'demo-tech-1',
-        name: 'Field Technician',
-        email: 'tech@company.com',
-        role: 'technician',
-        isActive: true,
-        lastLogin: new Date().toISOString(),
-        profile: {
-          phone: '(555) 987-6543',
-          department: 'Field Operations'
-        }
-      }
-    };
-
-    const user = demoUsers[email.toLowerCase()];
-    if (user && password === 'password123') {
-      // Create a demo JWT token
-      const demoToken = btoa(JSON.stringify({
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-        exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
-      }));
-      
-      localStorage.setItem('authToken', demoToken);
-      this.setUser(user);
-      
-      console.log('Demo authentication successful for:', email);
-      return { success: true, user: user };
-    }
-
+  // Register new user (not implemented for Firebase Auth)
+  async register(userData) {
     return { 
       success: false, 
-      error: 'Invalid credentials. Please use the demo credentials shown below the login form.' 
+      error: 'Registration is not available. Please contact an administrator.' 
     };
-  }
-
-  // Register new user
-  async register(userData) {
-    try {
-      const response = await apiService.register(userData);
-      return { success: true, data: response };
-    } catch (error) {
-      console.error('Registration error:', error);
-      return { success: false, error: error.message };
-    }
   }
 
   // Logout user
   async logout() {
     try {
-      await apiService.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
+      await firebaseAuthService.signOut();
       this.currentUser = null;
       this.isAuthenticated = false;
-      localStorage.removeItem('authToken');
       this.notifyListeners();
+      return { success: true };
+    } catch (error) {
+      console.error('Logout error:', error);
+      return { success: false, error: 'Logout failed' };
     }
   }
 
@@ -187,38 +150,15 @@ class AuthService {
     return this.currentUser.role || 'user';
   }
 
-  // Check if token is expired (basic check)
-  isTokenExpired() {
-    const token = localStorage.getItem('authToken');
-    if (!token) return true;
-
-    try {
-      // Decode JWT token to check expiration
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const currentTime = Date.now() / 1000;
-      return payload.exp < currentTime;
-    } catch (error) {
-      console.error('Error checking token expiration:', error);
-      return true;
-    }
+  // Get Firebase ID token for API requests
+  async getIdToken() {
+    return await firebaseAuthService.getIdToken();
   }
 
   // Refresh authentication state
   async refreshAuth() {
-    if (this.isTokenExpired()) {
-      this.logout();
-      return false;
-    }
-
-    try {
-      const user = await apiService.getCurrentUser();
-      this.setUser(user);
-      return true;
-    } catch (error) {
-      console.error('Auth refresh failed:', error);
-      this.logout();
-      return false;
-    }
+    // Firebase Auth handles token refresh automatically
+    return this.isUserAuthenticated();
   }
 }
 
