@@ -8,6 +8,7 @@ import MaintenanceChecklist from './components/MaintenanceChecklist'
 import CompletionScreen from './components/CompletionScreen'
 import CustomerManagement from './components/CustomerManagement'
 import CustomerForm from './components/CustomerForm'
+import CustomerDetails from './components/CustomerDetails'
 import RobotTypes from './components/RobotTypes'
 import UserManagement from './components/UserManagement'
 import Reports from './components/Reports'
@@ -157,6 +158,16 @@ function App() {
                 <CustomerForm 
                   user={currentUser}
                   mode="create"
+                /> : 
+                <Navigate to="/login" replace />
+            } 
+          />
+          <Route 
+            path="/customers/:id" 
+            element={
+              isAuthenticated ? 
+                <CustomerDetails 
+                  user={currentUser}
                 /> : 
                 <Navigate to="/login" replace />
             } 

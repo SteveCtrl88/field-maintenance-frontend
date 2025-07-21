@@ -30,7 +30,7 @@ const CustomerManagement = ({ user }) => {
     const fetchCustomers = async () => {
       try {
         setLoading(true)
-        const response = await fetch('https://j6h5i7c0ky7q.manus.space/api/v1/customers')
+        const response = await fetch('https://nghki1clpnz3.manus.space/api/v1/customers')
         const result = await response.json()
         
         if (result.success) {
@@ -217,7 +217,7 @@ const CustomerManagement = ({ user }) => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => navigate(`/customers/${customer.id}/edit`)}
+                      onClick={() => navigate(`/customers/${customer.id}`)}
                     >
                       View Details
                     </Button>

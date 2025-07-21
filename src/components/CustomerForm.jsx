@@ -55,41 +55,51 @@ const CustomerForm = ({ user, mode }) => {
     'Emily Davis'
   ])
 
-  // Mock data for editing
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  // Fetch customer data for editing
   useEffect(() => {
     if (isEditing && id) {
-      // In a real app, this would fetch from API
-      const mockCustomer = {
-        name: 'Acme Corporation',
-        address: '123 Business Ave, New York, NY 10001',
-        googleMapsLink: 'https://maps.google.com/?q=123+Business+Ave+New+York+NY',
-        contactPerson: 'John Doe',
-        phone: '+1 (555) 123-4567',
-        email: 'maintenance@acme.com',
-        notes: 'Customer prefers morning inspections. Building access requires security clearance.',
-        inspectionWeek: '3',
-        inspectionDay: 'wednesday',
-        technician: 'John Smith',
-        robots: [
-          {
-            id: 1,
-            name: 'Reception Bot',
-            serialNumber: 'RBT-001',
-            typeId: 1,
-            installationDate: '2024-01-15',
-            location: 'Building A - Floor 2 - Reception'
-          },
-          {
-            id: 2,
-            name: 'Warehouse Bot 1',
-            serialNumber: 'RBT-002',
-            typeId: 2,
-            installationDate: '2024-02-20',
-            location: 'Building A - Floor 1 - Warehouse'
+      console.log('Fetching customer data for ID:', id)
+      const fetchCustomer = async () => {
+        try {
+          setLoading(true)
+          const response = await fetch(`https://nghki1clpnz3.manus.space/api/v1/customers/${id}`)
+          const result = await response.json()
+          
+          console.log('API Response for customer', id, ':', result)
+          
+          if (result.success && result.data) {
+            const customer = result.data
+            console.log('Setting form data with customer:', customer)
+            
+            setFormData({
+              name: customer.name || '',
+              address: customer.address || '',
+              googleMapsLink: customer.google_maps_link || '',
+              contactPerson: customer.contact_person || '',
+              phone: customer.phone || '',
+              email: customer.email || '',
+              notes: customer.notes || '',
+              inspectionWeek: customer.inspection_schedule?.week_of_month?.replace(/\D/g, '') || '1',
+              inspectionDay: customer.inspection_schedule?.day_of_week?.toLowerCase() || 'monday',
+              technician: customer.inspection_schedule?.assigned_technician || '',
+              robots: customer.robots || []
+            })
+          } else {
+            console.error('Failed to fetch customer:', result.error)
+            alert('Failed to load customer data: ' + (result.error || 'Unknown error'))
           }
-        ]
+        } catch (error) {
+          console.error('Error fetching customer:', error)
+          alert('Error loading customer data: ' + error.message)
+        } finally {
+          setLoading(false)
+        }
       }
-      setFormData(mockCustomer)
+      
+      fetchCustomer()
     }
   }, [isEditing, id])
 
@@ -133,6 +143,8 @@ const CustomerForm = ({ user, mode }) => {
 
   const handleSave = async () => {
     try {
+      setSaving(true)
+      
       // Prepare the data for the API
       const customerData = {
         name: formData.name,
@@ -148,14 +160,28 @@ const CustomerForm = ({ user, mode }) => {
                          formData.inspectionWeek === '3' ? '3rd' : '4th',
           day_of_week: formData.inspectionDay.charAt(0).toUpperCase() + formData.inspectionDay.slice(1),
           assigned_technician: formData.technician
-        }
+        },
+        robots: formData.robots
       }
 
-      console.log('Creating customer:', customerData)
+      let url = 'https://nghki1clpnz3.manus.space/api/v1/customers'
+      let method = 'POST'
+      let actionText = 'Creating'
+
+      if (isEditing && id) {
+        url = `https://nghki1clpnz3.manus.space/api/v1/customers/${id}`
+        method = 'PUT'
+        actionText = 'Updating'
+      }
+
+      console.log(`${actionText} customer with ID: ${id}`)
+      console.log('URL:', url)
+      console.log('Method:', method)
+      console.log('Data:', customerData)
 
       // Call the API
-      const response = await fetch('https://j6h5i7c0ky7q.manus.space/api/v1/customers', {
-        method: 'POST',
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -164,16 +190,21 @@ const CustomerForm = ({ user, mode }) => {
 
       const result = await response.json()
       
+      console.log('API Response:', result)
+      
       if (result.success) {
-        console.log('Customer created successfully:', result.data)
+        console.log(`Customer ${isEditing ? 'updated' : 'created'} successfully:`, result.data)
+        alert(`Customer ${isEditing ? 'updated' : 'created'} successfully!`)
         navigate('/customers')
       } else {
-        console.error('Failed to create customer:', result.error)
-        alert('Failed to create customer: ' + (result.error || 'Unknown error'))
+        console.error(`Failed to ${isEditing ? 'update' : 'create'} customer:`, result.error)
+        alert(`Failed to ${isEditing ? 'update' : 'create'} customer: ` + (result.error || 'Unknown error'))
       }
     } catch (error) {
-      console.error('Error creating customer:', error)
-      alert('Error creating customer: ' + error.message)
+      console.error(`Error ${isEditing ? 'updating' : 'creating'} customer:`, error)
+      alert(`Error ${isEditing ? 'updating' : 'creating'} customer: ` + error.message)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -191,6 +222,17 @@ const CustomerForm = ({ user, mode }) => {
     return `Every ${weekNames[formData.inspectionWeek]} ${dayNames[formData.inspectionDay]} of the month`
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading customer data...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -200,205 +242,214 @@ const CustomerForm = ({ user, mode }) => {
             <div className="flex items-center">
               <Button 
                 variant="ghost" 
-                size="sm" 
                 onClick={() => navigate('/customers')}
                 className="mr-4"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="w-4 h-4 mr-2" />
                 Customers
               </Button>
-              <div className="bg-white p-2 rounded-lg mr-3 border">
-                <img src="/ctrl-logo.png" alt="Ctrl" className="h-6 w-auto" />
-              </div>
               <h1 className="text-xl font-semibold text-gray-900">
                 {isEditing ? 'Edit Customer' : 'Add New Customer'}
               </h1>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <User className="h-5 w-5 text-gray-500" />
-                <span className="text-sm text-gray-700">{user.name}</span>
-                <Badge variant="secondary">{user.role}</Badge>
-              </div>
+              <span className="text-sm text-gray-500">
+                {user?.role} • {user?.name}
+              </span>
             </div>
           </div>
         </div>
       </header>
 
+      {/* Debug Info */}
+      {isEditing && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+          <div className="bg-blue-50 border border-blue-200 rounded p-2 text-sm">
+            <strong>Debug:</strong> Editing customer ID: {id} | Customer Name: {formData.name || 'Loading...'}
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-          {/* Basic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-              <CardDescription>Customer contact and location details</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Company Name</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder="Enter company name"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="contactPerson">Contact Person</Label>
-                  <Input
-                    id="contactPerson"
-                    value={formData.contactPerson}
-                    onChange={(e) => handleInputChange('contactPerson', e.target.value)}
-                    placeholder="Enter contact person name"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  placeholder="Enter full address"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="googleMapsLink">Google Maps Link</Label>
-                <div className="flex space-x-2">
-                  <Input
-                    id="googleMapsLink"
-                    value={formData.googleMapsLink}
-                    onChange={(e) => handleInputChange('googleMapsLink', e.target.value)}
-                    placeholder="https://maps.google.com/..."
-                  />
-                  {formData.googleMapsLink && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open(formData.googleMapsLink, '_blank')}
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    placeholder="+1 (555) 123-4567"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    placeholder="maintenance@company.com"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
-                  placeholder="Special instructions, access requirements, etc."
-                  rows={3}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Inspection Schedule */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Inspection Schedule</CardTitle>
-              <CardDescription>Set the frequency and timing for maintenance inspections</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="inspectionWeek">Week of Month</Label>
-                  <Select value={formData.inspectionWeek} onValueChange={(value) => handleInputChange('inspectionWeek', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select week" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1st Week</SelectItem>
-                      <SelectItem value="2">2nd Week</SelectItem>
-                      <SelectItem value="3">3rd Week</SelectItem>
-                      <SelectItem value="4">4th Week</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="inspectionDay">Day of Week</Label>
-                  <Select value={formData.inspectionDay} onValueChange={(value) => handleInputChange('inspectionDay', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select day" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="monday">Monday</SelectItem>
-                      <SelectItem value="tuesday">Tuesday</SelectItem>
-                      <SelectItem value="wednesday">Wednesday</SelectItem>
-                      <SelectItem value="thursday">Thursday</SelectItem>
-                      <SelectItem value="friday">Friday</SelectItem>
-                      <SelectItem value="saturday">Saturday</SelectItem>
-                      <SelectItem value="sunday">Sunday</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="technician">Assigned Technician</Label>
-                  <Select value={formData.technician} onValueChange={(value) => handleInputChange('technician', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select technician" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {technicians.map((tech) => (
-                        <SelectItem key={tech} value={tech}>{tech}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              {formData.inspectionWeek && formData.inspectionDay && (
-                <div className="bg-blue-50 p-3 rounded-lg">
-                  <div className="flex items-center text-blue-800">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    <span className="text-sm font-medium">
-                      Schedule: {getInspectionScheduleText()}
-                    </span>
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Basic Information */}
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <User className="w-5 h-5 mr-2" />
+                    Basic Information
+                  </CardTitle>
+                  <CardDescription>
+                    Customer contact and location details
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="name">Company Name</Label>
+                      <Input
+                        id="name"
+                        placeholder="Enter company name"
+                        value={formData.name}
+                        onChange={(e) => handleInputChange('name', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="contactPerson">Contact Person</Label>
+                      <Input
+                        id="contactPerson"
+                        placeholder="Enter contact person name"
+                        value={formData.contactPerson}
+                        onChange={(e) => handleInputChange('contactPerson', e.target.value)}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  
+                  <div>
+                    <Label htmlFor="address">Address</Label>
+                    <Input
+                      id="address"
+                      placeholder="Enter full address"
+                      value={formData.address}
+                      onChange={(e) => handleInputChange('address', e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="googleMapsLink">Google Maps Link</Label>
+                    <Input
+                      id="googleMapsLink"
+                      placeholder="https://maps.google.com/..."
+                      value={formData.googleMapsLink}
+                      onChange={(e) => handleInputChange('googleMapsLink', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input
+                        id="phone"
+                        placeholder="+1 (555) 123-4567"
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email">Email Address</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="maintenance@company.com"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="notes">Notes</Label>
+                    <Textarea
+                      id="notes"
+                      placeholder="Additional notes about the customer..."
+                      value={formData.notes}
+                      onChange={(e) => handleInputChange('notes', e.target.value)}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Inspection Schedule */}
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Calendar className="w-5 h-5 mr-2" />
+                    Inspection Schedule
+                  </CardTitle>
+                  <CardDescription>
+                    Set the frequency and timing for maintenance inspections
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>Week of Month</Label>
+                    <Select value={formData.inspectionWeek} onValueChange={(value) => handleInputChange('inspectionWeek', value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1st Week</SelectItem>
+                        <SelectItem value="2">2nd Week</SelectItem>
+                        <SelectItem value="3">3rd Week</SelectItem>
+                        <SelectItem value="4">4th Week</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Day of Week</Label>
+                    <Select value={formData.inspectionDay} onValueChange={(value) => handleInputChange('inspectionDay', value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monday">Monday</SelectItem>
+                        <SelectItem value="tuesday">Tuesday</SelectItem>
+                        <SelectItem value="wednesday">Wednesday</SelectItem>
+                        <SelectItem value="thursday">Thursday</SelectItem>
+                        <SelectItem value="friday">Friday</SelectItem>
+                        <SelectItem value="saturday">Saturday</SelectItem>
+                        <SelectItem value="sunday">Sunday</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Assigned Technician</Label>
+                    <Select value={formData.technician} onValueChange={(value) => handleInputChange('technician', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select technician" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {technicians.map((tech) => (
+                          <SelectItem key={tech} value={tech}>{tech}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="bg-blue-50 p-3 rounded-md">
+                    <p className="text-sm text-blue-800">
+                      <Calendar className="w-4 h-4 inline mr-1" />
+                      Schedule: {getInspectionScheduleText()}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
 
           {/* Robot Management */}
-          <Card>
+          <Card className="mt-6">
             <CardHeader>
               <div className="flex justify-between items-center">
                 <div>
-                  <CardTitle>Robot Management</CardTitle>
-                  <CardDescription>Manage robots assigned to this customer</CardDescription>
+                  <CardTitle className="flex items-center">
+                    <Bot className="w-5 h-5 mr-2" />
+                    Robot Management
+                  </CardTitle>
+                  <CardDescription>
+                    Manage robots assigned to this customer
+                  </CardDescription>
                 </div>
-                <Button onClick={handleAddRobot}>
-                  <Plus className="h-4 w-4 mr-2" />
+                <Button onClick={handleAddRobot} variant="outline">
+                  <Plus className="w-4 h-4 mr-2" />
                   Add Robot
                 </Button>
               </div>
@@ -406,69 +457,72 @@ const CustomerForm = ({ user, mode }) => {
             <CardContent>
               {formData.robots.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  <Bot className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>No robots added yet</p>
-                  <Button variant="outline" onClick={handleAddRobot} className="mt-2">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Your First Robot
-                  </Button>
+                  <Bot className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <p>No robots assigned yet</p>
+                  <p className="text-sm">Click "Add Robot" to get started</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {formData.robots.map((robot, index) => (
-                    <Card key={robot.id} className="border-l-4 border-l-blue-500">
+                    <Card key={robot.id} className="border-gray-200">
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-center">
-                          <CardTitle className="text-lg">Robot #{index + 1}</CardTitle>
+                          <CardTitle className="text-base">Robot #{index + 1}</CardTitle>
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleRemoveRobot(robot.id)}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-600 hover:text-red-800"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <CardContent className="space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div>
                             <Label>Robot Name</Label>
                             <Input
+                              placeholder="Enter robot name"
                               value={robot.name}
                               onChange={(e) => handleRobotChange(robot.id, 'name', e.target.value)}
-                              placeholder="e.g., Reception Bot"
                             />
                           </div>
                           <div>
                             <Label>Serial Number</Label>
                             <Input
+                              placeholder="Enter serial number"
                               value={robot.serialNumber}
                               onChange={(e) => handleRobotChange(robot.id, 'serialNumber', e.target.value)}
-                              placeholder="e.g., RBT-001"
                             />
                           </div>
                         </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label>Robot Type</Label>
-                            <Select 
-                              value={robot.typeId.toString()} 
-                              onValueChange={(value) => handleRobotChange(robot.id, 'typeId', parseInt(value))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select robot type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {availableRobotTypes.map((type) => (
-                                  <SelectItem key={type.id} value={type.id.toString()}>
-                                    {type.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
+
+                        <div>
+                          <Label>Robot Type</Label>
+                          <Select 
+                            value={robot.typeId.toString()} 
+                            onValueChange={(value) => handleRobotChange(robot.id, 'typeId', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select robot type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableRobotTypes.map((type) => (
+                                <SelectItem key={type.id} value={type.id.toString()}>
+                                  {type.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {robot.typeId && (
+                            <p className="text-sm text-gray-600 mt-1">
+                              Selected Type: {getRobotTypeName(robot.typeId)}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div>
                             <Label>Installation Date</Label>
                             <Input
@@ -477,24 +531,15 @@ const CustomerForm = ({ user, mode }) => {
                               onChange={(e) => handleRobotChange(robot.id, 'installationDate', e.target.value)}
                             />
                           </div>
-                        </div>
-
-                        <div>
-                          <Label>Location in Building</Label>
-                          <Input
-                            value={robot.location}
-                            onChange={(e) => handleRobotChange(robot.id, 'location', e.target.value)}
-                            placeholder="e.g., Building A - Floor 2 - Reception Area"
-                          />
-                        </div>
-
-                        {robot.typeId && (
-                          <div className="bg-gray-50 p-3 rounded-lg">
-                            <div className="text-sm text-gray-600">
-                              Selected Type: <span className="font-medium">{getRobotTypeName(robot.typeId)}</span>
-                            </div>
+                          <div>
+                            <Label>Location in Building</Label>
+                            <Input
+                              placeholder="e.g., Floor 2, Room 201"
+                              value={robot.location}
+                              onChange={(e) => handleRobotChange(robot.id, 'location', e.target.value)}
+                            />
                           </div>
-                        )}
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
@@ -504,13 +549,22 @@ const CustomerForm = ({ user, mode }) => {
           </Card>
 
           {/* Action Buttons */}
-          <div className="flex justify-end space-x-4">
+          <div className="flex justify-end space-x-4 mt-6">
             <Button variant="outline" onClick={() => navigate('/customers')}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>
-              <Save className="h-4 w-4 mr-2" />
-              {isEditing ? 'Save Changes' : 'Create Customer'}
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  {isEditing ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  {isEditing ? 'Save Changes' : 'Create Customer'}
+                </>
+              )}
             </Button>
           </div>
         </div>
