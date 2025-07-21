@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,49 +21,48 @@ import {
 const CustomerManagement = ({ user }) => {
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
+  const [customers, setCustomers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  // Mock customer data
-  const customers = [
-    {
-      id: 1,
-      name: 'Acme Corporation',
-      address: '123 Business Ave, New York, NY 10001',
-      contactPerson: 'John Doe',
-      phone: '+1 (555) 123-4567',
-      email: 'maintenance@acme.com',
-      robotCount: 3,
-      technician: 'John Smith',
-      inspectionFrequency: '3rd Wednesday',
-      nextInspection: '2025-08-20',
-      status: 'active'
-    },
-    {
-      id: 2,
-      name: 'Tech Solutions Inc',
-      address: '456 Innovation Blvd, San Francisco, CA 94105',
-      contactPerson: 'Jane Smith',
-      phone: '+1 (555) 987-6543',
-      email: 'support@techsolutions.com',
-      robotCount: 2,
-      technician: 'John Smith',
-      inspectionFrequency: '1st Monday',
-      nextInspection: '2025-08-05',
-      status: 'active'
-    },
-    {
-      id: 3,
-      name: 'Global Industries',
-      address: '789 Corporate Dr, Chicago, IL 60601',
-      contactPerson: 'Mike Johnson',
-      phone: '+1 (555) 456-7890',
-      email: 'facilities@globalind.com',
-      robotCount: 5,
-      technician: 'Sarah Wilson',
-      inspectionFrequency: '2nd Friday',
-      nextInspection: '2025-08-09',
-      status: 'active'
+  // Fetch customers from API
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('https://j6h5i7c0ky7q.manus.space/api/v1/customers')
+        const result = await response.json()
+        
+        if (result.success) {
+          // Transform API data to match component expectations
+          const transformedCustomers = result.data.map(customer => ({
+            id: customer.id || customer._id,
+            name: customer.name,
+            address: customer.address || '',
+            contactPerson: customer.contact_person || '',
+            phone: customer.phone || '',
+            email: customer.email || '',
+            robotCount: 0, // Will be updated when robot API is available
+            technician: customer.inspection_schedule?.assigned_technician || '',
+            inspectionFrequency: customer.inspection_schedule ? 
+              `${customer.inspection_schedule.week_of_month} ${customer.inspection_schedule.day_of_week}` : '',
+            nextInspection: '2025-08-20', // Placeholder
+            status: 'active'
+          }))
+          setCustomers(transformedCustomers)
+        } else {
+          setError('Failed to fetch customers')
+        }
+      } catch (err) {
+        setError('Error fetching customers: ' + err.message)
+        console.error('Error fetching customers:', err)
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
+
+    fetchCustomers()
+  }, [])
 
   const filteredCustomers = customers.filter(customer =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -136,7 +135,27 @@ const CustomerManagement = ({ user }) => {
 
         {/* Customer List */}
         <div className="grid gap-6">
-          {filteredCustomers.map((customer) => (
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="text-gray-500">Loading customers...</div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <div className="text-red-500">{error}</div>
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.reload()} 
+                className="mt-2"
+              >
+                Retry
+              </Button>
+            </div>
+          ) : filteredCustomers.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-gray-500">No customers found</div>
+            </div>
+          ) : (
+            filteredCustomers.map((customer) => (
             <Card key={customer.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex justify-between items-start">
@@ -206,22 +225,9 @@ const CustomerManagement = ({ user }) => {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            ))
+          )}
         </div>
-
-        {filteredCustomers.length === 0 && (
-          <Card>
-            <CardContent className="text-center py-8">
-              <div className="text-gray-500 mb-4">
-                {searchTerm ? 'No customers found matching your search.' : 'No customers found.'}
-              </div>
-              <Button onClick={() => navigate('/customers/new')}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Your First Customer
-              </Button>
-            </CardContent>
-          </Card>
-        )}
       </main>
     </div>
   )

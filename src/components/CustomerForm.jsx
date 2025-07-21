@@ -131,10 +131,50 @@ const CustomerForm = ({ user, mode }) => {
     }))
   }
 
-  const handleSave = () => {
-    // In a real app, this would save to API
-    console.log('Saving customer:', formData)
-    navigate('/customers')
+  const handleSave = async () => {
+    try {
+      // Prepare the data for the API
+      const customerData = {
+        name: formData.name,
+        contact_person: formData.contactPerson,
+        address: formData.address,
+        google_maps_link: formData.googleMapsLink,
+        phone: formData.phone,
+        email: formData.email,
+        notes: formData.notes,
+        inspection_schedule: {
+          week_of_month: formData.inspectionWeek === '1' ? '1st' : 
+                         formData.inspectionWeek === '2' ? '2nd' :
+                         formData.inspectionWeek === '3' ? '3rd' : '4th',
+          day_of_week: formData.inspectionDay.charAt(0).toUpperCase() + formData.inspectionDay.slice(1),
+          assigned_technician: formData.technician
+        }
+      }
+
+      console.log('Creating customer:', customerData)
+
+      // Call the API
+      const response = await fetch('https://j6h5i7c0ky7q.manus.space/api/v1/customers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(customerData)
+      })
+
+      const result = await response.json()
+      
+      if (result.success) {
+        console.log('Customer created successfully:', result.data)
+        navigate('/customers')
+      } else {
+        console.error('Failed to create customer:', result.error)
+        alert('Failed to create customer: ' + (result.error || 'Unknown error'))
+      }
+    } catch (error) {
+      console.error('Error creating customer:', error)
+      alert('Error creating customer: ' + error.message)
+    }
   }
 
   const getRobotTypeName = (typeId) => {
