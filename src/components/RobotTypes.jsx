@@ -32,7 +32,7 @@ const RobotTypes = ({ user }) => {
     const loadRobotTypes = async () => {
       try {
         setLoading(true)
-        const result = await apiService.getRobots()
+        const result = await apiService.getRobotTypes()
         if (result.success) {
           setRobotTypes(result.data || [])
         } else {
@@ -101,27 +101,46 @@ const RobotTypes = ({ user }) => {
     setIsDialogOpen(true)
   }
 
-  const handleSave = () => {
-    if (editingType) {
-      // Update existing
-      setRobotTypes(prev => prev.map(type => 
-        type.id === editingType.id 
-          ? { ...type, ...formData }
-          : type
-      ))
-    } else {
-      // Add new
-      const newType = {
-        id: Date.now(),
-        ...formData
+  const handleSave = async () => {
+    try {
+      if (editingType) {
+        // Update existing
+        const result = await apiService.updateRobotType(editingType.id, formData)
+        if (result.success) {
+          setRobotTypes(prev => prev.map(type => 
+            type.id === editingType.id 
+              ? { ...type, ...result.data }
+              : type
+          ))
+        } else {
+          console.error('Failed to update robot type:', result.error)
+        }
+      } else {
+        // Add new
+        const result = await apiService.createRobotType(formData)
+        if (result.success) {
+          setRobotTypes(prev => [...prev, result.data])
+        } else {
+          console.error('Failed to create robot type:', result.error)
+        }
       }
-      setRobotTypes(prev => [...prev, newType])
+      setIsDialogOpen(false)
+    } catch (error) {
+      console.error('Error saving robot type:', error)
     }
-    setIsDialogOpen(false)
   }
 
-  const handleDelete = (id) => {
-    setRobotTypes(prev => prev.filter(type => type.id !== id))
+  const handleDelete = async (id) => {
+    try {
+      const result = await apiService.deleteRobotType(id)
+      if (result.success) {
+        setRobotTypes(prev => prev.filter(type => type.id !== id))
+      } else {
+        console.error('Failed to delete robot type:', result.error)
+      }
+    } catch (error) {
+      console.error('Error deleting robot type:', error)
+    }
   }
 
   const handleInputChange = (field, value) => {

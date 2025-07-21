@@ -159,6 +159,31 @@ class ApiService {
     return this.request(`/customers/${customerId}`);
   }
 
+  // Robot Types management endpoints
+  async getRobotTypes() {
+    return this.request('/robot-types');
+  }
+
+  async createRobotType(robotTypeData) {
+    return this.request('/robot-types', {
+      method: 'POST',
+      body: JSON.stringify(robotTypeData),
+    });
+  }
+
+  async updateRobotType(robotTypeId, robotTypeData) {
+    return this.request(`/robot-types/${robotTypeId}`, {
+      method: 'PUT',
+      body: JSON.stringify(robotTypeData),
+    });
+  }
+
+  async deleteRobotType(robotTypeId) {
+    return this.request(`/robot-types/${robotTypeId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Robot management endpoints (handled through customer updates)
   async getRobots() {
     // Get all robots from all customers
