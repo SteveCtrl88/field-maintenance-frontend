@@ -132,14 +132,22 @@ const RobotTypes = ({ user }) => {
 
   const handleDelete = async (id) => {
     try {
+      console.log('Attempting to delete robot type with ID:', id)
       const result = await apiService.deleteRobotType(id)
+      console.log('Delete API response:', result)
+      
       if (result.success) {
+        console.log('Delete successful, updating UI')
         setRobotTypes(prev => prev.filter(type => type.id !== id))
+        // Refresh the list to ensure consistency
+        loadRobotTypes()
       } else {
         console.error('Failed to delete robot type:', result.error)
+        alert('Failed to delete robot type: ' + (result.error || 'Unknown error'))
       }
     } catch (error) {
       console.error('Error deleting robot type:', error)
+      alert('Error deleting robot type: ' + error.message)
     }
   }
 
