@@ -232,7 +232,7 @@ const RobotTypes = ({ user }) => {
 
         {/* Robot Types Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {robotTypes.map((robotType) => (
+          {(robotTypes || []).map((robotType) => (
             <Card key={robotType.id} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
@@ -298,14 +298,14 @@ const RobotTypes = ({ user }) => {
                   <div>
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Maintenance Items</h4>
                     <div className="space-y-1">
-                      {robotType.maintenanceItems.slice(0, 3).map((item, index) => (
+                      {(robotType.maintenanceItems || []).slice(0, 3).map((item, index) => (
                         <div key={index} className="text-xs text-gray-600">
                           • {item}
                         </div>
                       ))}
-                      {robotType.maintenanceItems.length > 3 && (
+                      {(robotType.maintenanceItems || []).length > 3 && (
                         <div className="text-xs text-gray-500">
-                          +{robotType.maintenanceItems.length - 3} more items
+                          +{(robotType.maintenanceItems || []).length - 3} more items
                         </div>
                       )}
                     </div>
@@ -480,14 +480,14 @@ const RobotTypes = ({ user }) => {
                 </Button>
               </div>
               <div className="space-y-2 mt-2">
-                {formData.maintenanceItems.map((item, index) => (
+                {(formData.maintenanceItems || []).map((item, index) => (
                   <div key={index} className="flex space-x-2">
                     <Input
                       value={item}
                       onChange={(e) => handleMaintenanceItemChange(index, e.target.value)}
                       placeholder="e.g., Display functionality check"
                     />
-                    {formData.maintenanceItems.length > 1 && (
+                    {(formData.maintenanceItems || []).length > 1 && (
                       <Button
                         size="sm"
                         variant="outline"
