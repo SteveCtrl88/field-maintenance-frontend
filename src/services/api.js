@@ -1,7 +1,7 @@
 // API Service Layer for Field Maintenance Application
 // Handles all communication with the backend API
 
-const API_BASE_URL = 'https://77h9ikczp65z.manus.space/api/v1';
+const API_BASE_URL = 'https://zmhqivcv05ml.manus.space/api/v1';
 
 class ApiService {
   constructor() {
