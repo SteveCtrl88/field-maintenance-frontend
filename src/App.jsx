@@ -4,13 +4,12 @@ import LoginScreen from './components/LoginScreen'
 import Dashboard from './components/Dashboard'
 import QRScanner from './components/QRScanner'
 import RobotConfirmation from './components/RobotConfirmation'
-import MaintenanceChecklist from './components/MaintenanceChecklist'
-import CompletionScreen from './components/CompletionScreen'
+import MaintenanceHandler from './components/MaintenanceHandler'
+import MaintenanceComplete from './components/MaintenanceComplete'
 import CustomerManagement from './components/CustomerManagement'
-import CustomerForm from './components/CustomerForm'
 import CustomerDetails from './components/CustomerDetails'
+import CustomerForm from './components/CustomerForm'
 import RobotTypes from './components/RobotTypes'
-import UserManagement from './components/UserManagement'
 import Reports from './components/Reports'
 import authService from './services/auth.js'
 import firebaseAuthService from './services/firebase.js'
@@ -142,15 +141,15 @@ function App() {
           <Route 
             path="/maintenance" 
             element={
-              isAuthenticated && maintenanceSession ? 
-                <MaintenanceChecklist 
-                  session={maintenanceSession}
-                  robot={scannedRobot}
+              isAuthenticated ? 
+                <MaintenanceHandler 
+                  maintenanceSession={maintenanceSession}
+                  scannedRobot={scannedRobot}
                   user={currentUser}
                   onSessionUpdate={handleSessionUpdate}
                   onComplete={handleSessionComplete}
                 /> : 
-                <Navigate to="/scan" replace />
+                <Navigate to="/login" replace />
             } 
           />
           <Route 

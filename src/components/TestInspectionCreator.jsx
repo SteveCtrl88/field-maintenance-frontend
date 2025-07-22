@@ -1,327 +1,275 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Plus, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
-import apiService from '../services/api'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CheckCircle, AlertCircle, Loader2, Plus, Users, Bot } from 'lucide-react'
+import apiService from '../services/api.js'
 
 const TestInspectionCreator = ({ onInspectionCreated }) => {
-  const [isCreating, setIsCreating] = useState(false)
+  const [customers, setCustomers] = useState([])
+  const [selectedCustomer, setSelectedCustomer] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [loadingCustomers, setLoadingCustomers] = useState(true)
   const [result, setResult] = useState(null)
-  const [formData, setFormData] = useState({
-    robotSerial: 'RBT-TEST-' + Math.floor(Math.random() * 1000),
-    robotModel: 'Test Model X1',
-    customerName: 'Test Customer Corp',
-    customerAddress: '123 Test Street, Test City',
-    technicianName: 'Test Technician',
-    overallStatus: 'good',
-    issues: 0,
-    photos: 2,
-    notes: 'Test inspection created for dashboard verification'
-  })
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }))
-  }
+  // Load customers on component mount
+  useEffect(() => {
+    loadCustomers()
+  }, [])
 
-  const generateTestInspection = () => {
-    const now = new Date()
-    const completedTime = now.toISOString()
-    const completedDate = now.toLocaleDateString()
-    const completedTimeFormatted = now.toLocaleTimeString()
-    
-    return {
-      id: `TEST-${Date.now()}`,
-      sessionId: `session-${Date.now()}`,
-      robotId: `robot-${Date.now()}`,
-      robotSerial: formData.robotSerial,
-      robotModel: formData.robotModel,
-      customerId: `customer-${Date.now()}`,
-      customerName: formData.customerName,
-      customerAddress: formData.customerAddress,
-      technicianId: `tech-${Date.now()}`,
-      technicianName: formData.technicianName,
-      startTime: new Date(now.getTime() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
-      completedTime: completedTime,
-      completedDate: completedDate,
-      completedTimeFormatted: completedTimeFormatted,
-      duration: '30 minutes',
-      responses: {
-        display_working: 'yes',
-        robot_charging: 'yes',
-        charger_working: 'yes',
-        damage_check: formData.issues > 0 ? 'yes' : 'no',
-        door_1: 'yes',
-        door_2: 'yes',
-        door_3: 'yes',
-        door_4: 'yes',
-        lte_device: 'yes',
-        underside_inspection: 'yes'
-      },
-      images: {
-        damage_check: formData.photos > 0 ? [
-          {
-            id: `img_${Date.now()}_1`,
-            questionId: 'damage_check',
-            url: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=',
-            filename: `test_image_${Date.now()}.jpg`,
-            timestamp: completedTime,
-            note: 'Test image for verification',
-            uploadedToFirebase: false,
-            size: 1024
-          }
-        ] : [],
-        underside_inspection: [
-          {
-            id: `img_${Date.now()}_2`,
-            questionId: 'underside_inspection',
-            url: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=',
-            filename: `test_underside_${Date.now()}.jpg`,
-            timestamp: completedTime,
-            note: 'Underside inspection completed',
-            uploadedToFirebase: false,
-            size: 1024
-          }
-        ]
-      },
-      notes: {
-        underside_inspection: formData.notes,
-        damage_check: formData.issues > 0 ? 'Minor wear detected' : ''
-      },
-      status: 'completed',
-      issues: parseInt(formData.issues),
-      photos: parseInt(formData.photos),
-      overallStatus: formData.overallStatus,
-      nextMaintenance: new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toLocaleDateString(), // 90 days from now
-      type: 'maintenance_inspection'
+  const loadCustomers = async () => {
+    try {
+      setLoadingCustomers(true)
+      const response = await apiService.getCustomers()
+      const customersData = response?.data || response?.customers || response || []
+      setCustomers(Array.isArray(customersData) ? customersData : [])
+    } catch (error) {
+      console.error('Error loading customers:', error)
+      setResult({
+        success: false,
+        message: `Failed to load customers: ${error.message}`
+      })
+    } finally {
+      setLoadingCustomers(false)
     }
   }
 
-  const handleCreateInspection = async () => {
-    setIsCreating(true)
+  const createInspectionsForCustomer = async () => {
+    if (!selectedCustomer) {
+      setResult({
+        success: false,
+        message: 'Please select a customer first'
+      })
+      return
+    }
+
+    setLoading(true)
     setResult(null)
     
     try {
-      const inspectionData = generateTestInspection()
-      
-      // Try to create via API
-      const response = await apiService.createInspection(inspectionData)
-      
-      if (response.success) {
+      const customer = customers.find(c => c.id === selectedCustomer || c._id === selectedCustomer)
+      if (!customer) {
+        throw new Error('Selected customer not found')
+      }
+
+      const robots = customer.robots || []
+      if (robots.length === 0) {
+        throw new Error('Selected customer has no robots registered')
+      }
+
+      const createdInspections = []
+      const errors = []
+
+      // Create an inspection for each robot
+      for (const robot of robots) {
+        try {
+          const inspectionData = {
+            id: `inspection-${customer.id || customer._id}-${robot.serialNumber}-${Date.now()}`,
+            robotSerial: robot.serialNumber,
+            robotModel: robot.model || robot.type || 'Unknown Model',
+            customer: customer.companyName || customer.name,
+            customerName: customer.companyName || customer.name,
+            customerId: customer.id || customer._id,
+            customerAddress: customer.address || 'No address provided',
+            technicianName: 'Unassigned',
+            technicianId: null,
+            overallStatus: 'pending',
+            issues: 0,
+            notes: `Inspection scheduled for ${robot.serialNumber}`,
+            status: 'scheduled',
+            progress: 0, // 0% completion as requested
+            type: 'maintenance_inspection',
+            scheduledDate: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            date: new Date().toLocaleDateString(),
+            startTime: null,
+            completedDate: null,
+            completedTime: null,
+            completedTimeFormatted: null,
+            duration: null,
+            nextMaintenance: null,
+            sessionId: null,
+            photos: [],
+            checklist: {
+              items: []
+            }
+          }
+
+          const response = await apiService.createInspection(inspectionData)
+          
+          if (response.success) {
+            createdInspections.push({
+              robotSerial: robot.serialNumber,
+              inspectionId: response.data?.id || inspectionData.id
+            })
+          } else {
+            errors.push(`${robot.serialNumber}: ${response.message || 'Unknown error'}`)
+          }
+        } catch (robotError) {
+          errors.push(`${robot.serialNumber}: ${robotError.message}`)
+        }
+      }
+
+      // Show results
+      if (createdInspections.length > 0) {
         setResult({
           success: true,
-          message: 'Test inspection created successfully in database!',
-          data: response.data
+          message: `Successfully created ${createdInspections.length} inspection(s) for ${customer.companyName || customer.name}`,
+          data: {
+            created: createdInspections,
+            errors: errors
+          }
         })
         
-        // Also save to localStorage for immediate dashboard update
-        const existingReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
-        existingReports.push(inspectionData)
-        localStorage.setItem('maintenanceReports', JSON.stringify(existingReports))
-        
         if (onInspectionCreated) {
-          onInspectionCreated(inspectionData)
+          onInspectionCreated({ customer, inspections: createdInspections })
         }
       } else {
-        throw new Error(response.message || 'Failed to create inspection')
+        throw new Error(`Failed to create any inspections. Errors: ${errors.join(', ')}`)
       }
     } catch (error) {
-      console.error('Error creating test inspection:', error)
-      
-      // Fallback to localStorage only
-      const inspectionData = generateTestInspection()
-      const existingReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
-      existingReports.push(inspectionData)
-      localStorage.setItem('maintenanceReports', JSON.stringify(existingReports))
-      
+      console.error('Error creating inspections:', error)
       setResult({
         success: false,
-        message: `API failed (${error.message}), but inspection saved locally for testing`,
-        data: inspectionData
+        message: `Failed to create inspections: ${error.message}`
       })
-      
-      if (onInspectionCreated) {
-        onInspectionCreated(inspectionData)
-      }
     } finally {
-      setIsCreating(false)
+      setLoading(false)
     }
   }
 
-  const handleQuickCreate = () => {
-    // Generate random data for quick testing
-    setFormData({
-      robotSerial: 'RBT-QUICK-' + Math.floor(Math.random() * 1000),
-      robotModel: ['Model X1', 'Model Y2', 'Model Z3'][Math.floor(Math.random() * 3)],
-      customerName: ['Acme Corp', 'TechCo Industries', 'Global Systems'][Math.floor(Math.random() * 3)],
-      customerAddress: ['123 Main St', '456 Oak Ave', '789 Pine Rd'][Math.floor(Math.random() * 3)],
-      technicianName: ['John Smith', 'Sarah Johnson', 'Mike Wilson'][Math.floor(Math.random() * 3)],
-      overallStatus: ['excellent', 'good', 'fair'][Math.floor(Math.random() * 3)],
-      issues: Math.floor(Math.random() * 3),
-      photos: Math.floor(Math.random() * 5) + 1,
-      notes: 'Automated test inspection for dashboard verification'
-    })
+  const getSelectedCustomerInfo = () => {
+    if (!selectedCustomer) return null
+    const customer = customers.find(c => c.id === selectedCustomer || c._id === selectedCustomer)
+    return customer
   }
 
+  const selectedCustomerInfo = getSelectedCustomerInfo()
+
   return (
-    <Card className="w-full max-w-2xl">
+    <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Plus className="h-5 w-5" />
-          Test Inspection Creator
+          Create Inspections for Customer
         </CardTitle>
         <CardDescription>
-          Create test inspections to verify dashboard functionality and database connectivity
+          Select a customer to generate inspections for all their robots with 0% completion
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <CardContent className="space-y-6">
+        {/* Customer Selection */}
+        <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="robotSerial">Robot Serial</Label>
-            <Input
-              id="robotSerial"
-              value={formData.robotSerial}
-              onChange={(e) => handleInputChange('robotSerial', e.target.value)}
-              placeholder="RBT-TEST-001"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="robotModel">Robot Model</Label>
-            <Input
-              id="robotModel"
-              value={formData.robotModel}
-              onChange={(e) => handleInputChange('robotModel', e.target.value)}
-              placeholder="Model X1"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="customerName">Customer Name</Label>
-            <Input
-              id="customerName"
-              value={formData.customerName}
-              onChange={(e) => handleInputChange('customerName', e.target.value)}
-              placeholder="Test Customer Corp"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="technicianName">Technician Name</Label>
-            <Input
-              id="technicianName"
-              value={formData.technicianName}
-              onChange={(e) => handleInputChange('technicianName', e.target.value)}
-              placeholder="Test Technician"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="overallStatus">Overall Status</Label>
-            <Select value={formData.overallStatus} onValueChange={(value) => handleInputChange('overallStatus', value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="excellent">Excellent</SelectItem>
-                <SelectItem value="good">Good</SelectItem>
-                <SelectItem value="fair">Fair</SelectItem>
-                <SelectItem value="poor">Poor</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="issues">Number of Issues</Label>
-            <Input
-              id="issues"
-              type="number"
-              min="0"
-              max="10"
-              value={formData.issues}
-              onChange={(e) => handleInputChange('issues', e.target.value)}
-            />
-          </div>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="customerAddress">Customer Address</Label>
-          <Input
-            id="customerAddress"
-            value={formData.customerAddress}
-            onChange={(e) => handleInputChange('customerAddress', e.target.value)}
-            placeholder="123 Test Street, Test City"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="notes">Notes</Label>
-          <Textarea
-            id="notes"
-            value={formData.notes}
-            onChange={(e) => handleInputChange('notes', e.target.value)}
-            placeholder="Test inspection notes..."
-            rows={3}
-          />
-        </div>
-        
-        <div className="flex gap-2">
-          <Button
-            onClick={handleQuickCreate}
-            variant="outline"
-            className="flex-1"
-          >
-            Generate Random Data
-          </Button>
-          
-          <Button
-            onClick={handleCreateInspection}
-            disabled={isCreating}
-            className="flex-1"
-          >
-            {isCreating ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Creating...
-              </>
+            <Label htmlFor="customer-select">Select Customer</Label>
+            {loadingCustomers ? (
+              <div className="flex items-center gap-2 p-3 border rounded-md">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Loading customers...</span>
+              </div>
             ) : (
-              <>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Test Inspection
-              </>
+              <Select value={selectedCustomer || ''} onValueChange={setSelectedCustomer}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a customer..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((customer) => (
+                    <SelectItem key={customer.id || customer._id} value={customer.id || customer._id}>
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        <span>{customer.companyName || customer.name}</span>
+                        <Badge variant="secondary" className="ml-2">
+                          {customer.robots?.length || 0} robots
+                        </Badge>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
+          </div>
+
+          {/* Selected Customer Info */}
+          {selectedCustomerInfo && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="font-medium text-blue-900 mb-2">Selected Customer Details</h4>
+              <div className="space-y-2 text-sm text-blue-800">
+                <div><strong>Company:</strong> {selectedCustomerInfo.companyName || selectedCustomerInfo.name}</div>
+                <div><strong>Address:</strong> {selectedCustomerInfo.address || 'No address provided'}</div>
+                <div><strong>Robots:</strong> {selectedCustomerInfo.robots?.length || 0}</div>
+                {selectedCustomerInfo.robots && selectedCustomerInfo.robots.length > 0 && (
+                  <div className="mt-3">
+                    <strong>Robot List:</strong>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {selectedCustomerInfo.robots.map((robot, index) => (
+                        <Badge key={index} variant="outline" className="flex items-center gap-1">
+                          <Bot className="h-3 w-3" />
+                          {robot.serialNumber} ({robot.model || robot.type || 'Unknown'})
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Action Button */}
+        <div className="flex gap-3">
+          <Button
+            onClick={createInspectionsForCustomer}
+            disabled={loading || !selectedCustomer || loadingCustomers}
+            className="flex items-center gap-2"
+          >
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            Create Inspections for All Robots
           </Button>
         </div>
         
+        {/* Result Display */}
         {result && (
-          <Alert className={result.success ? 'border-green-200 bg-green-50' : 'border-orange-200 bg-orange-50'}>
-            {result.success ? (
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            ) : (
-              <AlertCircle className="h-4 w-4 text-orange-600" />
-            )}
-            <AlertDescription className={result.success ? 'text-green-800' : 'text-orange-800'}>
-              {result.message}
-              {result.data && (
-                <div className="mt-2">
-                  <Badge variant="outline" className="mr-2">
-                    ID: {result.data.id}
-                  </Badge>
-                  <Badge variant="outline">
-                    Serial: {result.data.robotSerial}
-                  </Badge>
-                </div>
+          <div className={`p-4 rounded-lg border ${
+            result.success 
+              ? 'bg-green-50 border-green-200 text-green-800' 
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}>
+            <div className="flex items-center gap-2">
+              {result.success ? (
+                <CheckCircle className="h-5 w-5" />
+              ) : (
+                <AlertCircle className="h-5 w-5" />
               )}
-            </AlertDescription>
-          </Alert>
+              <span className="font-medium">{result.message}</span>
+            </div>
+            {result.data && result.data.created && (
+              <div className="mt-3 space-y-2">
+                <div className="text-sm font-medium">Created Inspections:</div>
+                <div className="flex flex-wrap gap-2">
+                  {result.data.created.map((inspection, index) => (
+                    <Badge key={index} variant="secondary">
+                      {inspection.robotSerial}
+                    </Badge>
+                  ))}
+                </div>
+                {result.data.errors && result.data.errors.length > 0 && (
+                  <div className="mt-2">
+                    <div className="text-sm font-medium text-red-700">Errors:</div>
+                    <div className="text-xs text-red-600">
+                      {result.data.errors.join(', ')}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>
