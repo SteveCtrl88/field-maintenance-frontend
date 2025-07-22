@@ -461,7 +461,7 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
               </Button>
             </div>
             
-            {response === 'no' && (
+            {(response === 'no' || response === 'yes') && (
               <div className="space-y-4 p-4 bg-red-50 border border-red-200 rounded-lg">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Add notes about the issue:</label>

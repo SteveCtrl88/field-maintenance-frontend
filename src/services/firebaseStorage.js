@@ -331,6 +331,12 @@ class FirebaseStorageService {
 }
 
 // Create and export a singleton instance
-const firebaseStorageService = new FirebaseStorageService();
+let firebaseStorageService;
+try {
+  firebaseStorageService = new FirebaseStorageService();
+} catch (error) {
+  console.error('Error initializing Firebase Storage Service:', error);
+  firebaseStorageService = null;
+}
 export default firebaseStorageService;
 
