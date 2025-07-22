@@ -100,8 +100,13 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
   }
 
   const handleViewCustomer = (customer) => {
-    setSelectedCustomer(customer)
-    setIsCustomerModalOpen(true)
+    // Ensure we pass the customer ID, not the whole object
+    const customerId = customer.id || customer._id
+    if (customerId) {
+      navigate(`/customers/${customerId}`)
+    } else {
+      console.error('Customer ID not found:', customer)
+    }
   }
 
   const getStatusIcon = (status) => {
