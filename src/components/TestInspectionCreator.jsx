@@ -111,6 +111,16 @@ const TestInspectionCreator = ({ onInspectionCreated }) => {
         } catch (robotError) {
           errors.push(`${robot.serialNumber}: ${robotError.message}`)
         }
+
+        // Always save to localStorage as backup
+        try {
+          const existingScheduled = JSON.parse(localStorage.getItem('scheduledInspections') || '[]')
+          existingScheduled.push(inspectionData)
+          localStorage.setItem('scheduledInspections', JSON.stringify(existingScheduled))
+          console.log('Saved scheduled inspection to localStorage:', inspectionData.id)
+        } catch (localError) {
+          console.error('Error saving to localStorage:', localError)
+        }
       }
 
       // Show results
