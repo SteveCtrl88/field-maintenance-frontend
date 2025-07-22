@@ -97,8 +97,9 @@ const CustomerDetails = ({ user }) => {
   }
 
   const getInspectionScheduleText = () => {
-    if (!customer.inspection_schedule) return 'Not scheduled'
+    if (!customer?.inspection_schedule) return 'Not scheduled'
     const { week_of_month, day_of_week } = customer.inspection_schedule
+    if (!week_of_month || !day_of_week) return 'Not scheduled'
     return `Every ${week_of_month} ${day_of_week} of the month`
   }
 
@@ -161,7 +162,7 @@ const CustomerDetails = ({ user }) => {
                     </div>
                     <div>
                       <CardTitle className="flex items-center text-2xl">
-                        {customer.name}
+                        {customer?.name || 'Unknown Customer'}
                       </CardTitle>
                       <CardDescription className="text-lg">
                         Customer contact and location details
@@ -177,11 +178,11 @@ const CustomerDetails = ({ user }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-gray-700">Company Name</label>
-                      <p className="mt-1 text-sm text-gray-900">{customer.name}</p>
+                      <p className="mt-1 text-sm text-gray-900">{customer?.name || customer?.companyName || 'Not specified'}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-700">Contact Person</label>
-                      <p className="mt-1 text-sm text-gray-900">{customer.contact_person || 'Not specified'}</p>
+                      <p className="mt-1 text-sm text-gray-900">{customer?.contact_person || customer?.contactPerson || 'Not specified'}</p>
                     </div>
                   </div>
                   
@@ -190,8 +191,8 @@ const CustomerDetails = ({ user }) => {
                     <div className="mt-1 flex items-start">
                       <MapPin className="w-4 h-4 mr-2 mt-0.5 text-gray-400" />
                       <div>
-                        <p className="text-sm text-gray-900">{customer.address || 'Not specified'}</p>
-                        {customer.google_maps_link && (
+                        <p className="text-sm text-gray-900">{customer?.address || 'Not specified'}</p>
+                        {customer?.google_maps_link && (
                           <a 
                             href={customer.google_maps_link} 
                             target="_blank" 
@@ -211,19 +212,19 @@ const CustomerDetails = ({ user }) => {
                       <label className="text-sm font-medium text-gray-700">Phone Number</label>
                       <div className="mt-1 flex items-center">
                         <Phone className="w-4 h-4 mr-2 text-gray-400" />
-                        <p className="text-sm text-gray-900">{customer.phone || 'Not specified'}</p>
+                        <p className="text-sm text-gray-900">{customer?.phone || 'Not specified'}</p>
                       </div>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-700">Email Address</label>
                       <div className="mt-1 flex items-center">
                         <Mail className="w-4 h-4 mr-2 text-gray-400" />
-                        <p className="text-sm text-gray-900">{customer.email || 'Not specified'}</p>
+                        <p className="text-sm text-gray-900">{customer?.email || 'Not specified'}</p>
                       </div>
                     </div>
                   </div>
 
-                  {customer.notes && (
+                  {customer?.notes && (
                     <div>
                       <label className="text-sm font-medium text-gray-700">Notes</label>
                       <p className="mt-1 text-sm text-gray-900 bg-gray-50 p-3 rounded-md">{customer.notes}</p>
@@ -248,7 +249,7 @@ const CustomerDetails = ({ user }) => {
                     <p className="mt-1 text-sm text-gray-900">{getInspectionScheduleText()}</p>
                   </div>
                   
-                  {customer.inspection_schedule?.assigned_technician && (
+                  {customer?.inspection_schedule?.assigned_technician && (
                     <div>
                       <label className="text-sm font-medium text-gray-700">Assigned Technician</label>
                       <p className="mt-1 text-sm text-gray-900">{customer.inspection_schedule.assigned_technician}</p>
