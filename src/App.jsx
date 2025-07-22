@@ -23,18 +23,24 @@ function App() {
 
   // Initialize Firebase Auth and listen for auth state changes
   useEffect(() => {
-    console.log('Initializing Firebase Auth...');
+    if (import.meta.env.DEV) {
+      console.log('Initializing Firebase Auth...')
+    }
     
     // Make Firebase services available globally for debugging
-    window.firebaseAuthService = firebaseAuthService;
-    window.authService = authService;
+    if (import.meta.env.DEV) {
+      window.firebaseAuthService = firebaseAuthService
+      window.authService = authService
+    }
     
     // Listen for auth state changes
     const unsubscribe = authService.addListener((authState) => {
-      console.log('Auth state changed:', authState);
-      setIsAuthenticated(authState.isAuthenticated);
-      setCurrentUser(authState.user);
-    });
+      if (import.meta.env.DEV) {
+        console.log('Auth state changed:', authState)
+      }
+      setIsAuthenticated(authState.isAuthenticated)
+      setCurrentUser(authState.user)
+    })
 
     return () => {
       if (unsubscribe) {
