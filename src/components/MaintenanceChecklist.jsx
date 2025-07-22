@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -360,7 +360,7 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
 
   const countIssues = (responses) => {
     let issues = 0
-    Object.entries(responses).forEach(([questionId, response]) => {
+    Object.entries(responses).forEach(([, response]) => {
       if (response === 'no') {
         issues++
       }

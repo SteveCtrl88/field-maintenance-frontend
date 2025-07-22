@@ -44,7 +44,7 @@ const CustomerForm = ({ user, mode }) => {
     robots: []
   })
 
-  const [availableRobotTypes, setAvailableRobotTypes] = useState([
+  const [availableRobotTypes] = useState([
     { id: 1, name: 'ServiceBot Pro X1', image: '/api/placeholder/150/100' },
     { id: 2, name: 'ServiceBot Pro X2', image: '/api/placeholder/150/100' },
     { id: 3, name: 'ServiceBot Lite', image: '/api/placeholder/150/100' }

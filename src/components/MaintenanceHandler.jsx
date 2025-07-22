@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import MaintenanceChecklist from './MaintenanceChecklist'
 import apiService from '../services/api'
@@ -18,9 +18,9 @@ const MaintenanceHandler = ({ maintenanceSession, scannedRobot, user, onSessionU
       // Load scheduled inspection from API or localStorage
       loadScheduledInspection(inspectionId)
     }
-  }, [searchParams, maintenanceSession])
+  }, [searchParams, maintenanceSession, loadScheduledInspection])
 
-  const loadScheduledInspection = async (inspectionId) => {
+  const loadScheduledInspection = useCallback(async (inspectionId) => {
     try {
       setLoading(true)
       setError('')
@@ -30,7 +30,7 @@ const MaintenanceHandler = ({ maintenanceSession, scannedRobot, user, onSessionU
       try {
         const response = await apiService.getInspection(inspectionId)
         inspection = response.data || response
-      } catch (apiError) {
+      } catch {
         console.log('API not available, checking localStorage')
       }
 
@@ -81,7 +81,7 @@ const MaintenanceHandler = ({ maintenanceSession, scannedRobot, user, onSessionU
             startTime: new Date().toISOString(),
             progress: 0
           })
-        } catch (updateError) {
+        } catch {
           console.log('Could not update inspection status via API')
         }
       }
@@ -95,7 +95,7 @@ const MaintenanceHandler = ({ maintenanceSession, scannedRobot, user, onSessionU
     } finally {
       setLoading(false)
     }
-  }
+  }, [user, navigate])
 
   const handleSessionUpdate = (updatedSession) => {
     setCurrentSession(updatedSession)
