@@ -28,8 +28,10 @@ function App() {
     }
     
     // Make Firebase services available globally for debugging
-    window.firebaseAuthService = firebaseAuthService;
-    window.authService = authService;
+    if (import.meta.env.DEV) {
+      window.firebaseAuthService = firebaseAuthService
+      window.authService = authService
+    }
     
     // Listen for auth state changes
     const unsubscribe = authService.addListener((authState) => {
