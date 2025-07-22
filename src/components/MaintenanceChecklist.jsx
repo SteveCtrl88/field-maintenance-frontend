@@ -812,3 +812,4 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
 
 export default MaintenanceChecklist
 
+// Version 1.3 - Fixed inspection page error
