@@ -12,7 +12,12 @@ import {
   Calendar,
   Bot,
   User,
-  ExternalLink
+  ExternalLink,
+  CheckCircle,
+  Clock,
+  AlertTriangle,
+  FileText,
+  Camera
 } from 'lucide-react'
 import apiService from '../services/api'
 
@@ -20,18 +25,36 @@ const CustomerDetails = ({ user }) => {
   const navigate = useNavigate()
   const { id } = useParams()
   const [customer, setCustomer] = useState(null)
+  const [inspections, setInspections] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Fetch customer data
+  // Fetch customer data and inspection history
   useEffect(() => {
-    const fetchCustomer = async () => {
+    const fetchCustomerData = async () => {
       try {
         setLoading(true)
         const result = await apiService.getCustomer(id)
         
         if (result.success && result.data) {
           setCustomer(result.data)
+          
+          // Load inspection history for this customer
+          const localReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
+          const customerInspections = localReports.filter(report => 
+            report.customerId === id || 
+            report.customerName === result.data.name ||
+            report.customerName === result.data.companyName
+          )
+          
+          // Sort by completion time (most recent first)
+          customerInspections.sort((a, b) => {
+            const timeA = new Date(a.completedTime)
+            const timeB = new Date(b.completedTime)
+            return timeB - timeA
+          })
+          
+          setInspections(customerInspections)
         } else {
           setError('Failed to load customer data')
         }
@@ -44,7 +67,7 @@ const CustomerDetails = ({ user }) => {
     }
     
     if (id) {
-      fetchCustomer()
+      fetchCustomerData()
     }
   }, [id])
 
@@ -74,8 +97,9 @@ const CustomerDetails = ({ user }) => {
   }
 
   const getInspectionScheduleText = () => {
-    if (!customer.inspection_schedule) return 'Not scheduled'
+    if (!customer?.inspection_schedule) return 'Not scheduled'
     const { week_of_month, day_of_week } = customer.inspection_schedule
+    if (!week_of_month || !day_of_week) return 'Not scheduled'
     return `Every ${week_of_month} ${day_of_week} of the month`
   }
 
@@ -138,7 +162,7 @@ const CustomerDetails = ({ user }) => {
                     </div>
                     <div>
                       <CardTitle className="flex items-center text-2xl">
-                        {customer.name}
+                        {customer?.name || 'Unknown Customer'}
                       </CardTitle>
                       <CardDescription className="text-lg">
                         Customer contact and location details
@@ -154,11 +178,11 @@ const CustomerDetails = ({ user }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-gray-700">Company Name</label>
-                      <p className="mt-1 text-sm text-gray-900">{customer.name}</p>
+                      <p className="mt-1 text-sm text-gray-900">{customer?.name || customer?.companyName || 'Not specified'}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-700">Contact Person</label>
-                      <p className="mt-1 text-sm text-gray-900">{customer.contact_person || 'Not specified'}</p>
+                      <p className="mt-1 text-sm text-gray-900">{customer?.contact_person || customer?.contactPerson || 'Not specified'}</p>
                     </div>
                   </div>
                   
@@ -167,8 +191,8 @@ const CustomerDetails = ({ user }) => {
                     <div className="mt-1 flex items-start">
                       <MapPin className="w-4 h-4 mr-2 mt-0.5 text-gray-400" />
                       <div>
-                        <p className="text-sm text-gray-900">{customer.address || 'Not specified'}</p>
-                        {customer.google_maps_link && (
+                        <p className="text-sm text-gray-900">{customer?.address || 'Not specified'}</p>
+                        {customer?.google_maps_link && (
                           <a 
                             href={customer.google_maps_link} 
                             target="_blank" 
@@ -188,19 +212,19 @@ const CustomerDetails = ({ user }) => {
                       <label className="text-sm font-medium text-gray-700">Phone Number</label>
                       <div className="mt-1 flex items-center">
                         <Phone className="w-4 h-4 mr-2 text-gray-400" />
-                        <p className="text-sm text-gray-900">{customer.phone || 'Not specified'}</p>
+                        <p className="text-sm text-gray-900">{customer?.phone || 'Not specified'}</p>
                       </div>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-700">Email Address</label>
                       <div className="mt-1 flex items-center">
                         <Mail className="w-4 h-4 mr-2 text-gray-400" />
-                        <p className="text-sm text-gray-900">{customer.email || 'Not specified'}</p>
+                        <p className="text-sm text-gray-900">{customer?.email || 'Not specified'}</p>
                       </div>
                     </div>
                   </div>
 
-                  {customer.notes && (
+                  {customer?.notes && (
                     <div>
                       <label className="text-sm font-medium text-gray-700">Notes</label>
                       <p className="mt-1 text-sm text-gray-900 bg-gray-50 p-3 rounded-md">{customer.notes}</p>
@@ -225,7 +249,7 @@ const CustomerDetails = ({ user }) => {
                     <p className="mt-1 text-sm text-gray-900">{getInspectionScheduleText()}</p>
                   </div>
                   
-                  {customer.inspection_schedule?.assigned_technician && (
+                  {customer?.inspection_schedule?.assigned_technician && (
                     <div>
                       <label className="text-sm font-medium text-gray-700">Assigned Technician</label>
                       <p className="mt-1 text-sm text-gray-900">{customer.inspection_schedule.assigned_technician}</p>
@@ -257,6 +281,108 @@ const CustomerDetails = ({ user }) => {
                     <p className="text-sm text-gray-500">Robot data will be displayed here</p>
                     <p className="text-xs text-gray-400 mt-1">Feature coming soon</p>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Inspection History */}
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <FileText className="w-5 h-5 mr-2" />
+                    Inspection History
+                  </CardTitle>
+                  <CardDescription>
+                    Previous and upcoming maintenance inspections
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {inspections.length > 0 ? (
+                    <div className="space-y-4">
+                      {inspections.map((inspection) => (
+                        <div key={inspection.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start space-x-3">
+                              <div className="flex-shrink-0">
+                                {inspection.status === 'completed' ? (
+                                  <CheckCircle className="h-5 w-5 text-green-600" />
+                                ) : inspection.status === 'in_progress' ? (
+                                  <Clock className="h-5 w-5 text-yellow-600" />
+                                ) : (
+                                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2">
+                                  <h4 className="font-medium text-gray-900">
+                                    {inspection.robotSerial || 'Robot Inspection'}
+                                  </h4>
+                                  <Badge 
+                                    variant="secondary" 
+                                    className={
+                                      inspection.status === 'completed' 
+                                        ? 'bg-green-100 text-green-800'
+                                        : inspection.status === 'in_progress'
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : 'bg-red-100 text-red-800'
+                                    }
+                                  >
+                                    {inspection.status.replace('_', ' ')}
+                                  </Badge>
+                                </div>
+                                <div className="mt-1 text-sm text-gray-600">
+                                  <div className="flex items-center space-x-4">
+                                    <span className="flex items-center">
+                                      <Calendar className="h-4 w-4 mr-1" />
+                                      {inspection.completedDate || new Date(inspection.completedTime).toLocaleDateString()}
+                                    </span>
+                                    <span className="flex items-center">
+                                      <User className="h-4 w-4 mr-1" />
+                                      {inspection.technicianName || 'Unknown Technician'}
+                                    </span>
+                                  </div>
+                                </div>
+                                {inspection.status === 'completed' && (
+                                  <div className="mt-2 text-xs text-gray-500 space-y-1">
+                                    <div className="flex items-center space-x-4">
+                                      <span>Duration: {inspection.duration || 'N/A'}</span>
+                                      <span className="flex items-center">
+                                        <AlertTriangle className="h-3 w-3 mr-1" />
+                                        {inspection.issues || 0} issues
+                                      </span>
+                                      <span className="flex items-center">
+                                        <Camera className="h-3 w-3 mr-1" />
+                                        {inspection.photos || 0} photos
+                                      </span>
+                                    </div>
+                                    <div>
+                                      Overall Status: 
+                                      <span className={`ml-1 font-medium ${
+                                        inspection.overallStatus === 'excellent' ? 'text-green-600' :
+                                        inspection.overallStatus === 'good' ? 'text-blue-600' :
+                                        inspection.overallStatus === 'fair' ? 'text-yellow-600' :
+                                        'text-red-600'
+                                      }`}>
+                                        {inspection.overallStatus || 'Good'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right text-xs text-gray-500">
+                              {inspection.completedTimeFormatted || new Date(inspection.completedTime).toLocaleTimeString()}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p>No inspection history found</p>
+                      <p className="text-sm">Completed inspections will appear here</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { QrCode, User, Calendar, CheckCircle, Clock, AlertCircle, Users, Settings, Plus, MapPin, Eye, UserCheck, LogOut, Edit, AlertTriangle, FileText } from 'lucide-react'
 import apiService from '../services/api.js'
 import authService from '../services/auth.js'
+import TestInspectionCreator from './TestInspectionCreator.jsx'
 
 const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
   const navigate = useNavigate()
@@ -16,6 +17,7 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
   const [inspections, setInspections] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showTestCreator, setShowTestCreator] = useState(false)
 
   // Load data from API on component mount
   useEffect(() => {
@@ -35,18 +37,55 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
       
       // Safely extract data arrays with fallbacks
       const customersData = customersResponse?.data || customersResponse?.customers || customersResponse || []
-      const inspectionsData = inspectionsResponse?.data || inspectionsResponse?.inspections || inspectionsResponse || []
+      let inspectionsData = inspectionsResponse?.data || inspectionsResponse?.inspections || inspectionsResponse || []
+      
+      // Also load from localStorage for completed inspections
+      const localReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
+      
+      // Combine API inspections with local reports
+      const combinedInspections = [
+        ...inspectionsData,
+        ...localReports.map(report => ({
+          id: report.id,
+          robotSerial: report.robotSerial,
+          customer: report.customerName,
+          date: report.completedDate || new Date(report.completedTime).toLocaleDateString(),
+          status: report.status,
+          progress: 100,
+          type: 'maintenance_inspection',
+          completedTime: report.completedTime,
+          issues: report.issues || 0,
+          photos: report.photos || 0,
+          overallStatus: report.overallStatus || 'good'
+        }))
+      ]
+      
+      // Sort by completion time (most recent first)
+      combinedInspections.sort((a, b) => {
+        const timeA = new Date(a.completedTime || a.date)
+        const timeB = new Date(b.completedTime || b.date)
+        return timeB - timeA
+      })
       
       // Ensure we have arrays
       setCustomers(Array.isArray(customersData) ? customersData : [])
-      setInspections(Array.isArray(inspectionsData) ? inspectionsData : [])
+      setInspections(combinedInspections)
     } catch (error) {
       console.error('Error loading dashboard data:', error)
       setError('Failed to load dashboard data. Please try again.')
       
-      // Set empty arrays on error
+      // Load from localStorage as fallback
+      const localReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
+      setInspections(localReports.map(report => ({
+        id: report.id,
+        robotSerial: report.robotSerial,
+        customer: report.customerName,
+        date: report.completedDate || new Date(report.completedTime).toLocaleDateString(),
+        status: report.status,
+        progress: 100,
+        type: 'maintenance_inspection'
+      })))
       setCustomers([])
-      setInspections([])
     } finally {
       setLoading(false)
     }
@@ -62,9 +101,20 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
     navigate(`/maintenance?edit=${inspectionId}`)
   }
 
+  const handleTestInspectionCreated = (newInspection) => {
+    // Refresh dashboard data to show the new inspection
+    loadDashboardData()
+    setShowTestCreator(false)
+  }
+
   const handleViewCustomer = (customer) => {
-    setSelectedCustomer(customer)
-    setIsCustomerModalOpen(true)
+    // Ensure we pass the customer ID, not the whole object
+    const customerId = customer.id || customer._id
+    if (customerId) {
+      navigate(`/customers/${customerId}`)
+    } else {
+      console.error('Customer ID not found:', customer)
+    }
   }
 
   const getStatusIcon = (status) => {
@@ -150,6 +200,14 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                 >
                   <QrCode className="h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3" />
                   Scan Robot QR Code
+                </Button>
+                <Button 
+                  onClick={() => setShowTestCreator(true)}
+                  variant="outline"
+                  className="w-full h-12 text-sm sm:text-base"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Test Inspection
                 </Button>
                 <p className="text-xs sm:text-sm text-gray-600 text-center">
                   Scan the QR code on the robot to begin maintenance
@@ -512,6 +570,19 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Test Inspection Creator Dialog */}
+      <Dialog open={showTestCreator} onOpenChange={setShowTestCreator}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Test Inspection</DialogTitle>
+            <DialogDescription>
+              Create test inspections to verify dashboard functionality and database connectivity
+            </DialogDescription>
+          </DialogHeader>
+          <TestInspectionCreator onInspectionCreated={handleTestInspectionCreated} />
         </DialogContent>
       </Dialog>
     </div>

@@ -1,11 +1,13 @@
 // API Service Layer for Field Maintenance// API Service
 // Handles all HTTP requests to the backend API
 
-const API_BASE_URL = 'https://xlhyimc3k5wp.manus.space/api/v1';
+const API_BASE_URL = 'https://g8h3ilcvy617.manus.space/api/v1';
+const REPORTS_BASE_URL = 'https://g8h3ilcvy617.manus.space/api';
 
 class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
+    this.reportsURL = REPORTS_BASE_URL;
     this.token = localStorage.getItem('authToken');
   }
 
@@ -44,6 +46,11 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        console.error(`API request failed: ${response.status} ${response.statusText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       
       // Handle non-JSON responses (like health check)
       const contentType = response.headers.get('content-type');
@@ -337,6 +344,36 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(reportData),
     });
+  }
+
+  async generatePDFReport(reportData) {
+    try {
+      const token = this.getToken();
+      const config = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(reportData),
+      };
+
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${this.reportsURL}/reports/generate-pdf`, config);
+      
+      if (!response.ok) {
+        throw new Error(`PDF generation failed: ${response.status}`);
+      }
+      
+      // Return the blob for download
+      const blob = await response.blob();
+      return { success: true, blob };
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      return { success: false, error: error.message };
+    }
   }
 }
 

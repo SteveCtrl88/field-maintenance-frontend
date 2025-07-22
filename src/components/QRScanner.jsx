@@ -6,62 +6,52 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { QrCode, Camera, ArrowLeft, Loader2, AlertCircle } from 'lucide-react'
+import apiService from '../services/api'
 
 const QRScanner = ({ onRobotScanned, user }) => {
   const [isScanning, setIsScanning] = useState(false)
   const [manualSerial, setManualSerial] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [robots, setRobots] = useState([])
   const navigate = useNavigate()
 
-  // Mock robot database
-  const mockRobots = [
-    {
-      id: 1,
-      serialNumber: 'RBT-001',
-      model: 'ServiceBot Pro X1',
-      manufacturer: 'RoboTech Industries',
-      customer: {
-        name: 'Acme Corporation',
-        email: 'maintenance@acme.com',
-        contact: 'John Doe'
-      },
-      location: 'Building A - Floor 2',
-      installDate: '2024-03-15',
-      lastMaintenance: '2025-06-15',
-      image: '/api/placeholder/300/200'
-    },
-    {
-      id: 2,
-      serialNumber: 'RBT-045',
-      model: 'ServiceBot Pro X2',
-      manufacturer: 'RoboTech Industries',
-      customer: {
-        name: 'Tech Solutions Inc',
-        email: 'support@techsolutions.com',
-        contact: 'Jane Smith'
-      },
-      location: 'Warehouse - Section C',
-      installDate: '2024-05-20',
-      lastMaintenance: '2025-05-20',
-      image: '/api/placeholder/300/200'
-    },
-    {
-      id: 3,
-      serialNumber: 'RBT-023',
-      model: 'ServiceBot Lite',
-      manufacturer: 'RoboTech Industries',
-      customer: {
-        name: 'Global Industries',
-        email: 'facilities@global.com',
-        contact: 'Mike Johnson'
-      },
-      location: 'Office Complex - Main Lobby',
-      installDate: '2024-01-10',
-      lastMaintenance: '2025-04-10',
-      image: '/api/placeholder/300/200'
+  // Load robots from Firebase on component mount
+  useEffect(() => {
+    loadRobots()
+  }, [])
+
+  const loadRobots = async () => {
+    try {
+      const result = await apiService.getRobots()
+      if (result.success && result.data) {
+        setRobots(result.data)
+      } else {
+        console.error('Failed to load robots:', result.message)
+        // Fallback to demo data if API fails
+        setRobots([
+          {
+            id: 'demo-1',
+            serialNumber: 'RBT-001',
+            model: 'ServiceBot Pro X1',
+            manufacturer: 'RoboTech Industries',
+            customer: {
+              name: 'Acme Corporation',
+              email: 'maintenance@acme.com',
+              contact: 'John Doe'
+            },
+            location: 'Building A - Floor 2',
+            installDate: '2024-03-15',
+            lastMaintenance: '2025-06-15',
+            image: '/api/placeholder/300/200'
+          }
+        ])
+      }
+    } catch (error) {
+      console.error('Error loading robots:', error)
+      setError('Failed to load robot database. Using demo data.')
     }
-  ]
+  }
 
   const simulateQRScan = () => {
     setIsScanning(true)
@@ -70,8 +60,12 @@ const QRScanner = ({ onRobotScanned, user }) => {
     // Simulate camera scanning delay
     setTimeout(() => {
       // Randomly select a robot for demo
-      const randomRobot = mockRobots[Math.floor(Math.random() * mockRobots.length)]
-      handleRobotFound(randomRobot.serialNumber)
+      if (robots.length > 0) {
+        const randomRobot = robots[Math.floor(Math.random() * robots.length)]
+        handleRobotFound(randomRobot.serialNumber)
+      } else {
+        setError('No robots available in database')
+      }
       setIsScanning(false)
     }, 2000)
   }
@@ -91,12 +85,32 @@ const QRScanner = ({ onRobotScanned, user }) => {
   }
 
   const handleRobotFound = (serialNumber) => {
-    const robot = mockRobots.find(r => 
-      r.serialNumber.toLowerCase() === serialNumber.toLowerCase()
+    const robot = robots.find(r => 
+      r.serialNumber?.toLowerCase() === serialNumber.toLowerCase() ||
+      r.serial_number?.toLowerCase() === serialNumber.toLowerCase()
     )
     
     if (robot) {
-      onRobotScanned(robot)
+      // Normalize robot data structure
+      const normalizedRobot = {
+        id: robot.id || robot._id,
+        serialNumber: robot.serialNumber || robot.serial_number,
+        model: robot.model || robot.type || 'Unknown Model',
+        manufacturer: robot.manufacturer || 'Unknown Manufacturer',
+        customer: robot.customer || {
+          name: robot.customerName || 'Unknown Customer',
+          email: robot.customerEmail || '',
+          contact: robot.customerContact || ''
+        },
+        customerId: robot.customerId || robot.customer_id,
+        customerName: robot.customerName || robot.customer?.name || robot.customer?.companyName,
+        location: robot.location || 'Unknown Location',
+        installDate: robot.installDate || robot.installation_date || 'Unknown',
+        lastMaintenance: robot.lastMaintenance || robot.last_maintenance || 'Never',
+        image: robot.image || '/api/placeholder/300/200'
+      }
+      
+      onRobotScanned(normalizedRobot)
       navigate('/confirm-robot')
     } else {
       setError(`Robot with serial number "${serialNumber}" not found in database`)
@@ -215,13 +229,22 @@ const QRScanner = ({ onRobotScanned, user }) => {
           <Card className="bg-blue-50 border-blue-200">
             <CardContent className="pt-6">
               <div className="text-sm text-blue-800">
-                <p className="font-medium mb-2">Demo Mode - Available Robot Serial Numbers:</p>
+                <p className="font-medium mb-2">Available Robots:</p>
                 <div className="space-y-1">
-                  {mockRobots.map(robot => (
-                    <p key={robot.id}>
-                      <code className="bg-blue-100 px-2 py-1 rounded">{robot.serialNumber}</code> - {robot.model}
-                    </p>
-                  ))}
+                  {robots.length > 0 ? (
+                    robots.slice(0, 5).map(robot => (
+                      <p key={robot.id}>
+                        <code className="bg-blue-100 px-2 py-1 rounded">
+                          {robot.serialNumber || robot.serial_number}
+                        </code> - {robot.model || robot.type || 'Unknown Model'}
+                      </p>
+                    ))
+                  ) : (
+                    <p>Loading robots from database...</p>
+                  )}
+                  {robots.length > 5 && (
+                    <p className="text-blue-600">...and {robots.length - 5} more robots</p>
+                  )}
                 </div>
               </div>
             </CardContent>
