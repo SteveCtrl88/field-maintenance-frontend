@@ -64,8 +64,9 @@ const TestInspectionCreator = ({ onInspectionCreated }) => {
 
       // Create an inspection for each robot
       for (const robot of robots) {
+        let inspectionData
         try {
-          const inspectionData = {
+          inspectionData = {
             id: `inspection-${customer.id || customer._id}-${robot.serialNumber}-${Date.now()}`,
             robotSerial: robot.serialNumber,
             robotModel: robot.model || robot.type || 'Unknown Model',

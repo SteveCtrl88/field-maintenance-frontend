@@ -6,17 +6,12 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { QrCode, User, Calendar, CheckCircle, Clock, AlertCircle, Users, Settings, Plus, MapPin, Eye, UserCheck, LogOut, Edit, AlertTriangle, FileText } from 'lucide-react'
 import apiService from '../services/api.js'
-import authService from '../services/auth.js'
 import TestInspectionCreator from './TestInspectionCreator.jsx'
 
 const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
   const navigate = useNavigate()
-  const [selectedCustomer, setSelectedCustomer] = useState(null)
-  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false)
   const [customers, setCustomers] = useState([])
   const [inspections, setInspections] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [showTestCreator, setShowTestCreator] = useState(false)
 
   // Load data from API on component mount
@@ -26,8 +21,6 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
 
   const loadDashboardData = async () => {
     try {
-      setLoading(true)
-      setError('')
       
       // Load customers and inspections in parallel
       const [customersResponse, inspectionsResponse] = await Promise.all([
@@ -72,7 +65,6 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
       setInspections(combinedInspections)
     } catch (error) {
       console.error('Error loading dashboard data:', error)
-      setError('Failed to load dashboard data. Please try again.')
       
       // Load from localStorage as fallback
       const localReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
@@ -86,8 +78,6 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
         type: 'maintenance_inspection'
       })))
       setCustomers([])
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -101,7 +91,7 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
     navigate(`/maintenance?edit=${inspectionId}`)
   }
 
-  const handleTestInspectionCreated = (newInspection) => {
+  const handleTestInspectionCreated = () => {
     // Refresh dashboard data to show the new inspection
     loadDashboardData()
     setShowTestCreator(false)
@@ -497,106 +487,6 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
           </div>
         </div>
       </main>
-
-      {/* Customer Detail Modal */}
-      <Dialog open={isCustomerModalOpen} onOpenChange={setIsCustomerModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
-          <DialogHeader className="pb-4">
-            <DialogTitle className="text-lg sm:text-xl">Customer Visit Details</DialogTitle>
-            <DialogDescription className="text-sm">
-              Complete information about the scheduled maintenance visit
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedCustomer && (
-            <div className="space-y-4 sm:space-y-6">
-              {/* Customer Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold mb-3">Customer Information</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <span className="font-medium text-sm sm:text-base">Company:</span>
-                      <div className="text-sm sm:text-base text-gray-700 mt-1">{selectedCustomer.customer}</div>
-                    </div>
-                    <div>
-                      <span className="font-medium text-sm sm:text-base">Address:</span>
-                      <div className="mt-1">
-                        <div className="text-sm text-gray-700 mb-2">{selectedCustomer.address}</div>
-                        <a 
-                          href={`https://maps.google.com/?q=${encodeURIComponent(selectedCustomer.address)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm bg-blue-50 px-3 py-2 rounded-lg transition-colors"
-                        >
-                          <MapPin className="h-4 w-4 mr-2" />
-                          Open in Google Maps
-                        </a>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="font-medium text-sm sm:text-base">Robots:</span>
-                      <div className="text-sm sm:text-base text-gray-700 mt-1">{selectedCustomer.robots} units</div>
-                    </div>
-                    <div>
-                      <span className="font-medium text-sm sm:text-base">Assigned Technician:</span>
-                      <div className="text-sm sm:text-base text-gray-700 mt-1">{selectedCustomer.technician}</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold mb-3">Visit Schedule</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <span className="font-medium text-sm sm:text-base">Scheduled Date:</span>
-                      <div className="text-sm sm:text-base text-gray-700 mt-1">{selectedCustomer.scheduled}</div>
-                    </div>
-                    <div>
-                      <span className="font-medium text-sm sm:text-base">Status:</span>
-                      <div className="mt-1">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          selectedCustomer.daysUntil < 0 
-                            ? 'bg-red-100 text-red-800' 
-                            : selectedCustomer.daysUntil === 0 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {selectedCustomer.daysUntil < 0 ? 'OVERDUE' : selectedCustomer.daysUntil === 0 ? 'TODAY' : `${selectedCustomer.daysUntil} days remaining`}
-                        </span>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="font-medium text-sm sm:text-base">Visit Type:</span>
-                      <div className="text-sm sm:text-base text-gray-700 mt-1">Preventative Maintenance</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsCustomerModalOpen(false)}
-                  className="w-full sm:w-auto order-2 sm:order-1"
-                >
-                  Close
-                </Button>
-                <Button 
-                  onClick={() => {
-                    setIsCustomerModalOpen(false)
-                    navigate('/scan')
-                  }}
-                  className="w-full sm:w-auto order-1 sm:order-2"
-                >
-                  Start Maintenance
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Test Inspection Creator Dialog */}
       <Dialog open={showTestCreator} onOpenChange={setShowTestCreator}>

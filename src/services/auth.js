@@ -93,7 +93,7 @@ class AuthService {
   }
 
   // Register new user (not implemented for Firebase Auth)
-  async register(userData) {
+  async register() {
     return { 
       success: false, 
       error: 'Registration is not available. Please contact an administrator.' 

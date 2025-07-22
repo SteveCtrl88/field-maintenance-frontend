@@ -25,12 +25,10 @@ import apiService from '../services/api'
 const RobotTypes = ({ user }) => {
   const navigate = useNavigate()
   const [robotTypes, setRobotTypes] = useState([])
-  const [loading, setLoading] = useState(true)
 
   // Load robot types from Firebase
   const loadRobotTypes = async () => {
     try {
-      setLoading(true)
       const result = await apiService.getRobotTypes()
       if (result.success) {
         setRobotTypes(result.data || [])
@@ -43,7 +41,7 @@ const RobotTypes = ({ user }) => {
       console.error('Error loading robot types:', error)
       setRobotTypes([])
     } finally {
-      setLoading(false)
+      // no-op
     }
   }
 
