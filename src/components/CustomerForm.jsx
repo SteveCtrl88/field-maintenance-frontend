@@ -84,7 +84,9 @@ const CustomerForm = ({ user, mode }) => {
   // Fetch customer data for editing
   useEffect(() => {
     if (isEditing && id) {
-      console.log('Fetching customer data for ID:', id)
+      if (import.meta.env.DEV) {
+        console.log('Fetching customer data for ID:', id)
+      }
       const fetchCustomer = async () => {
         try {
           setLoading(true)
@@ -105,12 +107,16 @@ const CustomerForm = ({ user, mode }) => {
           })
           
           const result = await apiService.getCustomer(id)
-          
-          console.log('API Response for customer', id, ':', result)
+
+          if (import.meta.env.DEV) {
+            console.log('API Response for customer', id, ':', result)
+          }
           
           if (result.success && result.data) {
             const customer = result.data
-            console.log('Setting form data with customer:', customer)
+            if (import.meta.env.DEV) {
+              console.log('Setting form data with customer:', customer)
+            }
             
             setFormData({
               name: customer.name || '',
@@ -233,22 +239,35 @@ const CustomerForm = ({ user, mode }) => {
         robots: formData.robots
       }
 
-      console.log(`${actionText} customer with ID: ${id}`)
-      console.log('Data:', customerData)
+      if (import.meta.env.DEV) {
+        console.log(`${actionText} customer with ID: ${id}`)
+        console.log('Data:', customerData)
+      }
 
       let result
       if (isEditing && id) {
-        console.log('Updating customer via API service')
+        if (import.meta.env.DEV) {
+          console.log('Updating customer via API service')
+        }
         result = await apiService.updateCustomer(id, customerData)
       } else {
-        console.log('Creating customer via API service')
+        if (import.meta.env.DEV) {
+          console.log('Creating customer via API service')
+        }
         result = await apiService.createCustomer(customerData)
       }
       
-      console.log('API Response:', result)
+      if (import.meta.env.DEV) {
+        console.log('API Response:', result)
+      }
       
       if (result.success) {
-        console.log(`Customer ${isEditing ? 'updated' : 'created'} successfully:`, result.data)
+        if (import.meta.env.DEV) {
+          console.log(
+            `Customer ${isEditing ? 'updated' : 'created'} successfully:`,
+            result.data,
+          )
+        }
         alert(`Customer ${isEditing ? 'updated' : 'created'} successfully!`)
         navigate('/customers')
       } else {
