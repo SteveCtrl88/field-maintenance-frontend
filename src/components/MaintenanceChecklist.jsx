@@ -236,17 +236,17 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
         type: 'maintenance_inspection'
       }
 
-      // Save to Firebase via API
+      // Try to save to Firebase via API (but don't fail if it doesn't work)
       try {
         const result = await apiService.createInspection(completionData)
         if (result.success) {
           console.log('Inspection saved to Firebase:', result.data)
         }
       } catch (apiError) {
-        console.error('Error saving to Firebase:', apiError)
+        console.warn('Firebase API unavailable, saving locally only:', apiError)
       }
 
-      // Store locally as backup
+      // Always store locally as primary storage
       const existingReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
       existingReports.push(completionData)
       localStorage.setItem('maintenanceReports', JSON.stringify(existingReports))
