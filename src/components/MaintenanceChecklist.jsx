@@ -28,11 +28,13 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
   const [responses, setResponses] = useState(session.responses || {})
   const [images, setImages] = useState(session.images || {})
   const [notes, setNotes] = useState(session.notes || {})
-  const [showImageCapture, setShowImageCapture] = useState(false)
+  const [showChoiceModal, setShowChoiceModal] = useState(false)
   const [showNoteDialog, setShowNoteDialog] = useState(false)
+  const [showFullScreenCamera, setShowFullScreenCamera] = useState(false)
   const [currentNote, setCurrentNote] = useState('')
   const [isCapturingImage, setIsCapturingImage] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [cameraStream, setCameraStream] = useState(null)
 
   // Define all maintenance questions
   const questions = [
@@ -142,22 +144,55 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
     }
   }
 
-  const handleImageCapture = async () => {
-    setIsCapturingImage(true)
+  const handlePlusClick = () => {
+    setShowChoiceModal(true)
+  }
+
+  const handleChoiceModalClose = () => {
+    setShowChoiceModal(false)
+  }
+
+  const handleNoteChoice = () => {
+    setShowChoiceModal(false)
+    setShowNoteDialog(true)
+  }
+
+  const handleCameraChoice = async () => {
+    setShowChoiceModal(false)
+    setShowFullScreenCamera(true)
     
     try {
-      // Request camera access
+      // Start camera stream
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          facingMode: 'environment', // Use back camera if available
+          facingMode: 'environment',
           width: { ideal: 1280 },
           height: { ideal: 720 }
         } 
       })
-      
+      setCameraStream(stream)
+    } catch (error) {
+      console.error('Error accessing camera:', error)
+      if (error.name === 'NotAllowedError') {
+        alert('Camera access denied. Please allow camera permissions and try again.')
+      } else if (error.name === 'NotFoundError') {
+        alert('No camera found on this device.')
+      } else {
+        alert('Error accessing camera: ' + error.message)
+      }
+      setShowFullScreenCamera(false)
+    }
+  }
+
+  const handleImageCapture = async () => {
+    if (!cameraStream) return
+    
+    setIsCapturingImage(true)
+    
+    try {
       // Create video element to capture frame
       const video = document.createElement('video')
-      video.srcObject = stream
+      video.srcObject = cameraStream
       video.play()
       
       // Wait for video to load
@@ -175,9 +210,6 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
       const ctx = canvas.getContext('2d')
       ctx.drawImage(video, 0, 0)
       
-      // Stop camera stream
-      stream.getTracks().forEach(track => track.stop())
-      
       // Convert to data URL
       const dataUrl = canvas.toDataURL('image/jpeg', 0.8)
       
@@ -188,7 +220,7 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
         url: dataUrl,
         filename: `inspection_${currentQuestion.id}_${Date.now()}.jpg`,
         timestamp: new Date().toISOString(),
-        note: currentNote || '',
+        note: '',
         uploadedToFirebase: false,
         size: dataUrl.length
       }
@@ -200,8 +232,6 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
       }
       
       setImages(newImages)
-      setCurrentNote('')
-      setShowImageCapture(false)
       
       // Update session
       const updatedSession = {
@@ -212,22 +242,23 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
       }
       onSessionUpdate(updatedSession)
       
+      // Close camera
+      handleCameraClose()
+      
     } catch (error) {
       console.error('Error capturing image:', error)
-      
-      // Show user-friendly error message
-      if (error.name === 'NotAllowedError') {
-        alert('Camera access denied. Please allow camera permissions and try again.')
-      } else if (error.name === 'NotFoundError') {
-        alert('No camera found on this device.')
-      } else {
-        alert('Error accessing camera: ' + error.message)
-      }
-      
-      setShowImageCapture(false)
+      alert('Error capturing image: ' + error.message)
     } finally {
       setIsCapturingImage(false)
     }
+  }
+
+  const handleCameraClose = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop())
+      setCameraStream(null)
+    }
+    setShowFullScreenCamera(false)
   }
 
   const handleNoteAdd = () => {
@@ -424,7 +455,7 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
           </Button>
           <Button
             variant="outline"
-            onClick={() => setShowNoteDialog(true)}
+            onClick={handlePlusClick}
             className="px-4"
           >
             <Plus className="h-4 w-4" />
@@ -461,26 +492,6 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
             )}
           </div>
         )}
-
-        {/* Quick Action Buttons */}
-        <div className="flex gap-2">
-          <Button 
-            onClick={() => setShowImageCapture(true)} 
-            variant="outline" 
-            size="sm"
-          >
-            <Camera className="h-4 w-4 mr-2" />
-            Take Photo
-          </Button>
-          <Button 
-            onClick={() => setShowNoteDialog(true)} 
-            variant="outline" 
-            size="sm"
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Add Note
-          </Button>
-        </div>
       </div>
     )
   }
@@ -604,7 +615,44 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
         </div>
       </main>
 
-      {/* Note Dialog */}
+      {/* Choice Modal - Note or Photo */}
+      {showChoiceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-sm">
+            <CardHeader>
+              <CardTitle>Add Documentation</CardTitle>
+              <CardDescription>Choose what you'd like to add</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button 
+                onClick={handleNoteChoice}
+                className="w-full h-12"
+                variant="outline"
+              >
+                <FileText className="h-5 w-5 mr-3" />
+                Add Note
+              </Button>
+              <Button 
+                onClick={handleCameraChoice}
+                className="w-full h-12"
+                variant="outline"
+              >
+                <Camera className="h-5 w-5 mr-3" />
+                Take Photo
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={handleChoiceModalClose}
+                className="w-full"
+              >
+                Cancel
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Note Modal */}
       {showNoteDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <Card className="w-full max-w-md">
@@ -618,8 +666,8 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
                 value={currentNote}
                 onChange={(e) => setCurrentNote(e.target.value)}
                 rows={4}
+                className="resize-none"
               />
-              
               <div className="flex gap-2">
                 <Button 
                   onClick={handleNoteAdd}
@@ -644,73 +692,64 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
         </div>
       )}
 
-      {/* Image Capture Modal */}
-      {showImageCapture && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Capture Image</CardTitle>
-              <CardDescription>Take a photo for documentation</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
-                <div className="text-center">
-                  <Camera className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600">Camera preview</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Camera will activate when you capture
-                  </p>
+      {/* Full Screen Camera */}
+      {showFullScreenCamera && (
+        <div className="fixed inset-0 bg-black z-50 flex flex-col">
+          {/* Camera Header */}
+          <div className="flex items-center justify-between p-4 bg-black text-white">
+            <Button 
+              variant="ghost" 
+              onClick={handleCameraClose}
+              className="text-white hover:bg-gray-800"
+            >
+              <X className="h-6 w-6" />
+            </Button>
+            <h2 className="text-lg font-semibold">Take Photo</h2>
+            <div className="w-10" /> {/* Spacer */}
+          </div>
+
+          {/* Camera View */}
+          <div className="flex-1 relative">
+            {cameraStream ? (
+              <video
+                ref={(video) => {
+                  if (video && cameraStream) {
+                    video.srcObject = cameraStream
+                    video.play()
+                  }
+                }}
+                className="w-full h-full object-cover"
+                autoPlay
+                playsInline
+                muted
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-900 flex items-center justify-center">
+                <div className="text-center text-white">
+                  <Camera className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <p>Starting camera...</p>
                 </div>
               </div>
-              
-              {currentNote && (
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    <strong>Note:</strong> {currentNote}
-                  </p>
-                </div>
-              )}
-              
-              <div className="space-y-2">
-                <Textarea
-                  placeholder="Add a note for this image (optional)..."
-                  value={currentNote}
-                  onChange={(e) => setCurrentNote(e.target.value)}
-                  rows={2}
-                />
-              </div>
-              
-              <div className="flex gap-2">
-                <Button 
-                  onClick={handleImageCapture}
-                  className="flex-1"
-                  disabled={isCapturingImage}
-                >
-                  {isCapturingImage ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Capturing...
-                    </>
-                  ) : (
-                    <>
-                      <Camera className="h-4 w-4 mr-2" />
-                      Capture Photo
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setShowImageCapture(false)
-                    setCurrentNote('')
-                  }}
-                  disabled={isCapturingImage}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            )}
+          </div>
+
+          {/* Camera Controls */}
+          <div className="p-6 bg-black">
+            <div className="flex items-center justify-center">
+              <Button
+                onClick={handleImageCapture}
+                disabled={isCapturingImage || !cameraStream}
+                className="w-16 h-16 rounded-full bg-white hover:bg-gray-200 text-black"
+                size="lg"
+              >
+                {isCapturingImage ? (
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                ) : (
+                  <Camera className="h-8 w-8" />
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
