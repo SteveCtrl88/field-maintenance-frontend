@@ -12,7 +12,12 @@ import {
   Calendar,
   Bot,
   User,
-  ExternalLink
+  ExternalLink,
+  CheckCircle,
+  Clock,
+  AlertTriangle,
+  FileText,
+  Camera
 } from 'lucide-react'
 import apiService from '../services/api'
 
@@ -20,18 +25,36 @@ const CustomerDetails = ({ user }) => {
   const navigate = useNavigate()
   const { id } = useParams()
   const [customer, setCustomer] = useState(null)
+  const [inspections, setInspections] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Fetch customer data
+  // Fetch customer data and inspection history
   useEffect(() => {
-    const fetchCustomer = async () => {
+    const fetchCustomerData = async () => {
       try {
         setLoading(true)
         const result = await apiService.getCustomer(id)
         
         if (result.success && result.data) {
           setCustomer(result.data)
+          
+          // Load inspection history for this customer
+          const localReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
+          const customerInspections = localReports.filter(report => 
+            report.customerId === id || 
+            report.customerName === result.data.name ||
+            report.customerName === result.data.companyName
+          )
+          
+          // Sort by completion time (most recent first)
+          customerInspections.sort((a, b) => {
+            const timeA = new Date(a.completedTime)
+            const timeB = new Date(b.completedTime)
+            return timeB - timeA
+          })
+          
+          setInspections(customerInspections)
         } else {
           setError('Failed to load customer data')
         }
@@ -44,7 +67,7 @@ const CustomerDetails = ({ user }) => {
     }
     
     if (id) {
-      fetchCustomer()
+      fetchCustomerData()
     }
   }, [id])
 
@@ -257,6 +280,108 @@ const CustomerDetails = ({ user }) => {
                     <p className="text-sm text-gray-500">Robot data will be displayed here</p>
                     <p className="text-xs text-gray-400 mt-1">Feature coming soon</p>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Inspection History */}
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <FileText className="w-5 h-5 mr-2" />
+                    Inspection History
+                  </CardTitle>
+                  <CardDescription>
+                    Previous and upcoming maintenance inspections
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {inspections.length > 0 ? (
+                    <div className="space-y-4">
+                      {inspections.map((inspection) => (
+                        <div key={inspection.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start space-x-3">
+                              <div className="flex-shrink-0">
+                                {inspection.status === 'completed' ? (
+                                  <CheckCircle className="h-5 w-5 text-green-600" />
+                                ) : inspection.status === 'in_progress' ? (
+                                  <Clock className="h-5 w-5 text-yellow-600" />
+                                ) : (
+                                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2">
+                                  <h4 className="font-medium text-gray-900">
+                                    {inspection.robotSerial || 'Robot Inspection'}
+                                  </h4>
+                                  <Badge 
+                                    variant="secondary" 
+                                    className={
+                                      inspection.status === 'completed' 
+                                        ? 'bg-green-100 text-green-800'
+                                        : inspection.status === 'in_progress'
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : 'bg-red-100 text-red-800'
+                                    }
+                                  >
+                                    {inspection.status.replace('_', ' ')}
+                                  </Badge>
+                                </div>
+                                <div className="mt-1 text-sm text-gray-600">
+                                  <div className="flex items-center space-x-4">
+                                    <span className="flex items-center">
+                                      <Calendar className="h-4 w-4 mr-1" />
+                                      {inspection.completedDate || new Date(inspection.completedTime).toLocaleDateString()}
+                                    </span>
+                                    <span className="flex items-center">
+                                      <User className="h-4 w-4 mr-1" />
+                                      {inspection.technicianName || 'Unknown Technician'}
+                                    </span>
+                                  </div>
+                                </div>
+                                {inspection.status === 'completed' && (
+                                  <div className="mt-2 text-xs text-gray-500 space-y-1">
+                                    <div className="flex items-center space-x-4">
+                                      <span>Duration: {inspection.duration || 'N/A'}</span>
+                                      <span className="flex items-center">
+                                        <AlertTriangle className="h-3 w-3 mr-1" />
+                                        {inspection.issues || 0} issues
+                                      </span>
+                                      <span className="flex items-center">
+                                        <Camera className="h-3 w-3 mr-1" />
+                                        {inspection.photos || 0} photos
+                                      </span>
+                                    </div>
+                                    <div>
+                                      Overall Status: 
+                                      <span className={`ml-1 font-medium ${
+                                        inspection.overallStatus === 'excellent' ? 'text-green-600' :
+                                        inspection.overallStatus === 'good' ? 'text-blue-600' :
+                                        inspection.overallStatus === 'fair' ? 'text-yellow-600' :
+                                        'text-red-600'
+                                      }`}>
+                                        {inspection.overallStatus || 'Good'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right text-xs text-gray-500">
+                              {inspection.completedTimeFormatted || new Date(inspection.completedTime).toLocaleTimeString()}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p>No inspection history found</p>
+                      <p className="text-sm">Completed inspections will appear here</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

@@ -35,18 +35,55 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
       
       // Safely extract data arrays with fallbacks
       const customersData = customersResponse?.data || customersResponse?.customers || customersResponse || []
-      const inspectionsData = inspectionsResponse?.data || inspectionsResponse?.inspections || inspectionsResponse || []
+      let inspectionsData = inspectionsResponse?.data || inspectionsResponse?.inspections || inspectionsResponse || []
+      
+      // Also load from localStorage for completed inspections
+      const localReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
+      
+      // Combine API inspections with local reports
+      const combinedInspections = [
+        ...inspectionsData,
+        ...localReports.map(report => ({
+          id: report.id,
+          robotSerial: report.robotSerial,
+          customer: report.customerName,
+          date: report.completedDate || new Date(report.completedTime).toLocaleDateString(),
+          status: report.status,
+          progress: 100,
+          type: 'maintenance_inspection',
+          completedTime: report.completedTime,
+          issues: report.issues || 0,
+          photos: report.photos || 0,
+          overallStatus: report.overallStatus || 'good'
+        }))
+      ]
+      
+      // Sort by completion time (most recent first)
+      combinedInspections.sort((a, b) => {
+        const timeA = new Date(a.completedTime || a.date)
+        const timeB = new Date(b.completedTime || b.date)
+        return timeB - timeA
+      })
       
       // Ensure we have arrays
       setCustomers(Array.isArray(customersData) ? customersData : [])
-      setInspections(Array.isArray(inspectionsData) ? inspectionsData : [])
+      setInspections(combinedInspections)
     } catch (error) {
       console.error('Error loading dashboard data:', error)
       setError('Failed to load dashboard data. Please try again.')
       
-      // Set empty arrays on error
+      // Load from localStorage as fallback
+      const localReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
+      setInspections(localReports.map(report => ({
+        id: report.id,
+        robotSerial: report.robotSerial,
+        customer: report.customerName,
+        date: report.completedDate || new Date(report.completedTime).toLocaleDateString(),
+        status: report.status,
+        progress: 100,
+        type: 'maintenance_inspection'
+      })))
       setCustomers([])
-      setInspections([])
     } finally {
       setLoading(false)
     }

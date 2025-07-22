@@ -17,16 +17,22 @@ import {
   Home,
   X,
   Check,
-  Loader2
+  Loader2,
+  Plus
 } from 'lucide-react'
+import apiService from '../services/api'
 
 const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplete }) => {
   const navigate = useNavigate()
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [responses, setResponses] = useState(session.responses || {})
   const [images, setImages] = useState(session.images || {})
+  const [notes, setNotes] = useState(session.notes || {})
   const [showImageCapture, setShowImageCapture] = useState(false)
+  const [showNoteDialog, setShowNoteDialog] = useState(false)
   const [currentNote, setCurrentNote] = useState('')
+  const [isCapturingImage, setIsCapturingImage] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   // Define all maintenance questions
   const questions = [
@@ -34,73 +40,74 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
       id: 'display_working',
       title: 'Display Check',
       question: 'Is the display on and in good working order?',
-      type: 'yes_no',
+      type: 'yes_no_plus',
       required: true
     },
     {
       id: 'robot_charging',
       title: 'Charging System',
       question: 'Is the robot charging correctly?',
-      type: 'yes_no',
+      type: 'yes_no_plus',
       required: true
     },
     {
       id: 'charger_working',
       title: 'Charger Condition',
       question: 'Is the charger in good working order?',
-      type: 'yes_no',
+      type: 'yes_no_plus',
       required: true
+    },
+    {
+      id: 'damage_check',
+      title: 'Damage Assessment',
+      question: 'Is there any damage?',
+      type: 'yes_no_plus',
+      required: true,
+      mandatoryImageOnYes: true
     },
     {
       id: 'door_1',
       title: 'Door 1 Test',
       question: 'Open and close door 1. Is the door in good working order?',
-      type: 'yes_no',
+      type: 'yes_no_plus',
       required: true
     },
     {
       id: 'door_2',
       title: 'Door 2 Test',
       question: 'Open and close door 2. Is the door in good working order?',
-      type: 'yes_no',
+      type: 'yes_no_plus',
       required: true
     },
     {
       id: 'door_3',
       title: 'Door 3 Test',
       question: 'Open and close door 3. Is the door in good working order?',
-      type: 'yes_no_optional',
+      type: 'yes_no_plus',
       required: true
     },
     {
       id: 'door_4',
       title: 'Door 4 Test',
       question: 'Open and close door 4. Is the door in good working order?',
-      type: 'yes_no_optional',
+      type: 'yes_no_plus',
       required: true
     },
     {
       id: 'lte_device',
       title: 'LTE Device Check',
       question: 'Is the LTE device in good working order and secure inside the robot?',
-      type: 'yes_no',
+      type: 'yes_no_plus',
       required: true
     },
     {
-      id: 'battery_level',
-      title: 'Battery Level Test',
-      question: 'Test the battery level. Is it functioning correctly?',
-      type: 'yes_no_conditional',
-      required: true,
-      conditionalNote: true,
-      conditionalImage: true
-    },
-    {
-      id: 'underside_inspected',
+      id: 'underside_inspection',
       title: 'Underside Inspection',
-      question: 'Have you inspected the underside of the robot?',
-      type: 'yes_no',
-      required: true
+      question: 'Please check the underside of the robot for any debris, please clean around the wheels and make sure all ground contacts can reach the floor.',
+      type: 'yes_no_plus',
+      required: true,
+      mandatoryImage: true,
+      mandatoryNote: true
     }
   ]
 
@@ -117,7 +124,8 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
     const updatedSession = {
       ...session,
       responses: newResponses,
-      images
+      images,
+      notes
     }
     onSessionUpdate(updatedSession)
   }
@@ -134,176 +142,300 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
     }
   }
 
-  const handleComplete = () => {
-    const completionData = {
-      id: `RPT-${Date.now()}`,
-      sessionId: session.id,
-      robotId: robot.id,
-      robotSerial: robot.serialNumber,
-      robotModel: robot.model,
-      technicianId: user.id,
-      technicianName: user.name,
-      customer: robot.customer || 'Unknown Customer',
-      customerAddress: robot.address || 'Unknown Address',
-      startTime: session.startTime,
-      completedTime: new Date().toISOString(),
-      responses: responses,
-      images: images,
-      status: 'completed'
+  const handleImageCapture = async () => {
+    setIsCapturingImage(true)
+    
+    try {
+      // Simulate image capture and upload to Firebase Storage
+      const imageData = {
+        id: `img_${Date.now()}`,
+        questionId: currentQuestion.id,
+        url: `/api/placeholder/400/300?t=${Date.now()}`,
+        filename: `inspection_${currentQuestion.id}_${Date.now()}.jpg`,
+        timestamp: new Date().toISOString(),
+        note: currentNote || '',
+        uploadedToFirebase: true
+      }
+      
+      const questionImages = images[currentQuestion.id] || []
+      const newImages = {
+        ...images,
+        [currentQuestion.id]: [...questionImages, imageData]
+      }
+      
+      setImages(newImages)
+      setCurrentNote('')
+      setShowImageCapture(false)
+      
+      // Update session
+      const updatedSession = {
+        ...session,
+        responses,
+        images: newImages,
+        notes
+      }
+      onSessionUpdate(updatedSession)
+      
+    } catch (error) {
+      console.error('Error capturing image:', error)
+    } finally {
+      setIsCapturingImage(false)
     }
+  }
 
-    // Store the completion record
-    const existingReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
-    existingReports.push(completionData)
-    localStorage.setItem('maintenanceReports', JSON.stringify(existingReports))
-
-    // Update session status
-    const updatedSession = {
-      ...session,
-      responses,
-      images,
-      status: 'completed',
-      completedTime: new Date().toISOString()
+  const handleNoteAdd = () => {
+    if (currentNote.trim()) {
+      const newNotes = {
+        ...notes,
+        [currentQuestion.id]: currentNote.trim()
+      }
+      setNotes(newNotes)
+      
+      // Update session
+      const updatedSession = {
+        ...session,
+        responses,
+        images,
+        notes: newNotes
+      }
+      onSessionUpdate(updatedSession)
     }
     
-    onSessionUpdate(updatedSession)
-    onComplete(completionData)
-    navigate('/complete')
+    setCurrentNote('')
+    setShowNoteDialog(false)
+  }
+
+  const handleComplete = async () => {
+    setIsSaving(true)
+    
+    try {
+      const completionData = {
+        id: `RPT-${Date.now()}`,
+        sessionId: session.id,
+        robotId: robot.id,
+        robotSerial: robot.serialNumber,
+        robotModel: robot.model,
+        customerId: robot.customerId || robot.customer?._id,
+        customerName: robot.customer?.companyName || robot.customerName || 'Unknown Customer',
+        customerAddress: robot.customer?.address || robot.address || 'Unknown Address',
+        technicianId: user.id,
+        technicianName: user.name || user.email,
+        startTime: session.startTime,
+        completedTime: new Date().toISOString(),
+        completedDate: new Date().toLocaleDateString(),
+        completedTimeFormatted: new Date().toLocaleTimeString(),
+        duration: calculateDuration(session.startTime, new Date()),
+        responses: responses,
+        images: images,
+        notes: notes,
+        status: 'completed',
+        issues: countIssues(responses),
+        photos: countPhotos(images),
+        overallStatus: determineOverallStatus(responses),
+        nextMaintenance: calculateNextMaintenance(),
+        type: 'maintenance_inspection'
+      }
+
+      // Save to Firebase via API
+      try {
+        const result = await apiService.createInspection(completionData)
+        if (result.success) {
+          console.log('Inspection saved to Firebase:', result.data)
+        }
+      } catch (apiError) {
+        console.error('Error saving to Firebase:', apiError)
+      }
+
+      // Store locally as backup
+      const existingReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
+      existingReports.push(completionData)
+      localStorage.setItem('maintenanceReports', JSON.stringify(existingReports))
+
+      // Update session status
+      const updatedSession = {
+        ...session,
+        responses,
+        images,
+        notes,
+        status: 'completed',
+        completedTime: new Date().toISOString()
+      }
+      
+      onSessionUpdate(updatedSession)
+      onComplete(completionData)
+      navigate('/complete')
+      
+    } catch (error) {
+      console.error('Error completing inspection:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const calculateDuration = (startTime, endTime) => {
+    const start = new Date(startTime)
+    const end = new Date(endTime)
+    const diffMs = end - start
+    const diffMins = Math.round(diffMs / 60000)
+    return `${diffMins} minutes`
+  }
+
+  const countIssues = (responses) => {
+    let issues = 0
+    Object.entries(responses).forEach(([questionId, response]) => {
+      if (response === 'no') {
+        issues++
+      }
+    })
+    return issues
+  }
+
+  const countPhotos = (images) => {
+    let photoCount = 0
+    Object.values(images).forEach(questionImages => {
+      photoCount += questionImages.length
+    })
+    return photoCount
+  }
+
+  const determineOverallStatus = (responses) => {
+    const issueCount = countIssues(responses)
+    if (issueCount === 0) return 'excellent'
+    if (issueCount <= 2) return 'good'
+    if (issueCount <= 4) return 'fair'
+    return 'poor'
+  }
+
+  const calculateNextMaintenance = () => {
+    const nextDate = new Date()
+    nextDate.setMonth(nextDate.getMonth() + 3) // 3 months from now
+    return nextDate.toLocaleDateString()
   }
 
   const allQuestionsCompleted = () => {
-    return questions.every(q => responses[q.id] !== undefined)
+    return questions.every(q => {
+      const hasResponse = responses[q.id] !== undefined
+      
+      // Check mandatory image requirements
+      if (q.mandatoryImage || (q.mandatoryImageOnYes && responses[q.id] === 'yes')) {
+        const questionImages = images[q.id] || []
+        return hasResponse && questionImages.length > 0
+      }
+      
+      // Check mandatory note requirements
+      if (q.mandatoryNote) {
+        const questionNote = notes[q.id]
+        return hasResponse && questionNote && questionNote.trim().length > 0
+      }
+      
+      return hasResponse
+    })
+  }
+
+  const isQuestionComplete = (question) => {
+    const hasResponse = responses[question.id] !== undefined
+    
+    if (question.mandatoryImage || (question.mandatoryImageOnYes && responses[question.id] === 'yes')) {
+      const questionImages = images[question.id] || []
+      return hasResponse && questionImages.length > 0
+    }
+    
+    if (question.mandatoryNote) {
+      const questionNote = notes[question.id]
+      return hasResponse && questionNote && questionNote.trim().length > 0
+    }
+    
+    return hasResponse
   }
 
   const renderQuestionContent = () => {
     const response = responses[currentQuestion.id]
     const questionImages = images[currentQuestion.id] || []
+    const questionNote = notes[currentQuestion.id] || ''
+    const needsMandatoryImage = currentQuestion.mandatoryImage || (currentQuestion.mandatoryImageOnYes && response === 'yes')
+    const needsMandatoryNote = currentQuestion.mandatoryNote
 
-    switch (currentQuestion.type) {
-      case 'yes_no':
-        return (
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <Button
-                variant={response === 'yes' ? 'default' : 'outline'}
-                onClick={() => handleResponse(currentQuestion.id, 'yes')}
-                className="flex-1"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Yes
-              </Button>
-              <Button
-                variant={response === 'no' ? 'destructive' : 'outline'}
-                onClick={() => handleResponse(currentQuestion.id, 'no')}
-                className="flex-1"
-              >
-                <X className="h-4 w-4 mr-2" />
-                No
-              </Button>
-            </div>
-          </div>
-        )
+    return (
+      <div className="space-y-4">
+        {/* Yes/No/+ Buttons */}
+        <div className="flex gap-4">
+          <Button
+            variant={response === 'yes' ? 'default' : 'outline'}
+            onClick={() => handleResponse(currentQuestion.id, 'yes')}
+            className="flex-1"
+          >
+            <Check className="h-4 w-4 mr-2" />
+            Yes
+          </Button>
+          <Button
+            variant={response === 'no' ? 'destructive' : 'outline'}
+            onClick={() => handleResponse(currentQuestion.id, 'no')}
+            className="flex-1"
+          >
+            <X className="h-4 w-4 mr-2" />
+            No
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowNoteDialog(true)}
+            className="px-4"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
 
-      case 'yes_no_optional':
-        return (
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <Button
-                variant={response === 'yes' ? 'default' : 'outline'}
-                onClick={() => handleResponse(currentQuestion.id, 'yes')}
-                className="flex-1"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Yes
-              </Button>
-              <Button
-                variant={response === 'no' ? 'destructive' : 'outline'}
-                onClick={() => handleResponse(currentQuestion.id, 'no')}
-                className="flex-1"
-              >
-                <X className="h-4 w-4 mr-2" />
-                No
-              </Button>
-              <Button
-                variant={response === 'not_applicable' ? 'secondary' : 'outline'}
-                onClick={() => handleResponse(currentQuestion.id, 'not_applicable')}
-                className="flex-1"
-              >
-                N/A
-              </Button>
-            </div>
-          </div>
-        )
+        {/* Mandatory Requirements Alert */}
+        {response && (needsMandatoryImage || needsMandatoryNote) && (
+          <Alert className="border-orange-200 bg-orange-50">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800">
+              {needsMandatoryImage && needsMandatoryNote && 'This question requires both a photo and notes.'}
+              {needsMandatoryImage && !needsMandatoryNote && 'This question requires a photo.'}
+              {!needsMandatoryImage && needsMandatoryNote && 'This question requires notes.'}
+            </AlertDescription>
+          </Alert>
+        )}
 
-      case 'yes_no_conditional':
-        return (
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <Button
-                variant={response === 'yes' ? 'default' : 'outline'}
-                onClick={() => handleResponse(currentQuestion.id, 'yes')}
-                className="flex-1"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Yes
-              </Button>
-              <Button
-                variant={response === 'no' ? 'destructive' : 'outline'}
-                onClick={() => handleResponse(currentQuestion.id, 'no')}
-                className="flex-1"
-              >
-                <X className="h-4 w-4 mr-2" />
-                No
-              </Button>
-            </div>
-            
-            {response && (
-              <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm font-medium">Would you like to add notes or take a photo?</p>
-                <div className="flex gap-2">
-                  <Button onClick={() => setShowImageCapture(true)} variant="outline" size="sm">
-                    <Camera className="h-4 w-4 mr-2" />
-                    Take Photo
-                  </Button>
-                  <Button onClick={() => setCurrentNote('')} variant="outline" size="sm">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Add Note
-                  </Button>
-                </div>
-                {questionImages.length > 0 && (
-                  <div className="text-sm text-green-600">
-                    {questionImages.length} photo(s) captured
-                  </div>
-                )}
+        {/* Current Notes and Images */}
+        {(questionNote || questionImages.length > 0) && (
+          <div className="space-y-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            {questionNote && (
+              <div>
+                <p className="text-sm font-medium text-blue-800">Note:</p>
+                <p className="text-sm text-blue-700">{questionNote}</p>
+              </div>
+            )}
+            {questionImages.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-blue-800">
+                  {questionImages.length} photo(s) captured
+                </p>
               </div>
             )}
           </div>
-        )
+        )}
 
-      default:
-        return (
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <Button
-                variant={response === 'yes' ? 'default' : 'outline'}
-                onClick={() => handleResponse(currentQuestion.id, 'yes')}
-                className="flex-1"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Yes
-              </Button>
-              <Button
-                variant={response === 'no' ? 'destructive' : 'outline'}
-                onClick={() => handleResponse(currentQuestion.id, 'no')}
-                className="flex-1"
-              >
-                <X className="h-4 w-4 mr-2" />
-                No
-              </Button>
-            </div>
-          </div>
-        )
-    }
+        {/* Quick Action Buttons */}
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => setShowImageCapture(true)} 
+            variant="outline" 
+            size="sm"
+          >
+            <Camera className="h-4 w-4 mr-2" />
+            Take Photo
+          </Button>
+          <Button 
+            onClick={() => setShowNoteDialog(true)} 
+            variant="outline" 
+            size="sm"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Add Note
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -355,7 +487,11 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Circle className="h-5 w-5" />
+                {isQuestionComplete(currentQuestion) ? (
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                ) : (
+                  <Circle className="h-5 w-5" />
+                )}
                 {currentQuestion.title}
               </CardTitle>
               <CardDescription>
@@ -382,7 +518,7 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
               {currentQuestionIndex < questions.length - 1 ? (
                 <Button
                   onClick={handleNext}
-                  disabled={!responses[currentQuestion.id]}
+                  disabled={!isQuestionComplete(currentQuestion)}
                 >
                   Next
                   <ArrowRight className="h-4 w-4 ml-2" />
@@ -390,11 +526,20 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
               ) : (
                 <Button
                   onClick={handleComplete}
-                  disabled={!allQuestionsCompleted()}
+                  disabled={!allQuestionsCompleted() || isSaving}
                   className="bg-green-600 hover:bg-green-700"
                 >
-                  Complete Maintenance
-                  <CheckCircle className="h-4 w-4 ml-2" />
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      Complete Maintenance
+                      <CheckCircle className="h-4 w-4 ml-2" />
+                    </>
+                  )}
                 </Button>
               )}
             </div>
@@ -405,12 +550,52 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
             <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                Please complete all required questions before finishing the maintenance.
+                Please complete all required questions and mandatory requirements before finishing the maintenance.
               </AlertDescription>
             </Alert>
           )}
         </div>
       </main>
+
+      {/* Note Dialog */}
+      {showNoteDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Add Note</CardTitle>
+              <CardDescription>Add observations or comments for this question</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                placeholder="Enter your notes here..."
+                value={currentNote}
+                onChange={(e) => setCurrentNote(e.target.value)}
+                rows={4}
+              />
+              
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleNoteAdd}
+                  className="flex-1"
+                  disabled={!currentNote.trim()}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Save Note
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowNoteDialog(false)
+                    setCurrentNote('')
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Image Capture Modal */}
       {showImageCapture && (
@@ -431,35 +616,48 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
                 </div>
               </div>
               
+              {currentNote && (
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> {currentNote}
+                  </p>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <Textarea
+                  placeholder="Add a note for this image (optional)..."
+                  value={currentNote}
+                  onChange={(e) => setCurrentNote(e.target.value)}
+                  rows={2}
+                />
+              </div>
+              
               <div className="flex gap-2">
                 <Button 
-                  onClick={() => {
-                    // Simulate image capture
-                    const newImage = {
-                      id: Date.now(),
-                      url: '/api/placeholder/400/300',
-                      timestamp: new Date().toISOString(),
-                      note: currentNote
-                    }
-                    
-                    const questionImages = images[currentQuestion.id] || []
-                    const newImages = {
-                      ...images,
-                      [currentQuestion.id]: [...questionImages, newImage]
-                    }
-                    
-                    setImages(newImages)
-                    setCurrentNote('')
-                    setShowImageCapture(false)
-                  }} 
+                  onClick={handleImageCapture}
                   className="flex-1"
+                  disabled={isCapturingImage}
                 >
-                  <Camera className="h-4 w-4 mr-2" />
-                  Capture Photo
+                  {isCapturingImage ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Capturing...
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="h-4 w-4 mr-2" />
+                      Capture Photo
+                    </>
+                  )}
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => setShowImageCapture(false)}
+                  onClick={() => {
+                    setShowImageCapture(false)
+                    setCurrentNote('')
+                  }}
+                  disabled={isCapturingImage}
                 >
                   Cancel
                 </Button>
