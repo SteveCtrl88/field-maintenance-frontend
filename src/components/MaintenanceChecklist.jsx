@@ -485,9 +485,23 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
             )}
             {questionImages.length > 0 && (
               <div>
-                <p className="text-sm font-medium text-blue-800">
+                <p className="text-sm font-medium text-blue-800 mb-2">
                   {questionImages.length} photo(s) captured
                 </p>
+                <div className="flex flex-wrap gap-2">
+                  {questionImages.map((image, index) => (
+                    <div key={image.id} className="relative">
+                      <img
+                        src={image.url}
+                        alt={`Captured photo ${index + 1}`}
+                        className="w-16 h-16 object-cover rounded-lg border-2 border-blue-200"
+                      />
+                      <div className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {index + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
