@@ -118,7 +118,7 @@ class PDFService {
     const images = [];
     if (session.images) {
       Object.entries(session.images).forEach(([stepName, stepImages]) => {
-        stepImages.forEach((imageUrl, index) => {
+        stepImages.forEach((imageUrl) => {
           images.push({
             url: imageUrl,
             step_name: stepName,
