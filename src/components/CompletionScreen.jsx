@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -12,11 +13,17 @@ import {
   Download,
   Clock,
   User,
-  Building
+  Building,
+  Loader2
 } from 'lucide-react'
+import pdfService from '../services/pdfService'
 
 const CompletionScreen = ({ session, robot, user, onNewMaintenance }) => {
   const navigate = useNavigate()
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
+  const [isSendingEmail, setIsSendingEmail] = useState(false)
+  const [pdfError, setPdfError] = useState(null)
+  const [emailError, setEmailError] = useState(null)
 
   const handleNewMaintenance = () => {
     onNewMaintenance()
@@ -36,14 +43,40 @@ const CompletionScreen = ({ session, robot, user, onNewMaintenance }) => {
   const totalImages = Object.values(session.images).reduce((acc, imgs) => acc + imgs.length, 0)
 
   // Mock PDF generation and email sending
-  const handleDownloadReport = () => {
-    // Simulate PDF download
-    alert('PDF report would be downloaded here')
+  const handleDownloadReport = async () => {
+    setIsGeneratingPDF(true)
+    setPdfError(null)
+    
+    try {
+      // Prepare report data from session information
+      const reportData = pdfService.prepareReportData(session, robot, user, robot.customer)
+      
+      // Generate and download PDF
+      await pdfService.generatePDFReport(reportData)
+      
+      // Show success message
+      alert('PDF report downloaded successfully!')
+    } catch (error) {
+      console.error('Error generating PDF:', error)
+      setPdfError('Failed to generate PDF report. Please try again.')
+    } finally {
+      setIsGeneratingPDF(false)
+    }
   }
 
-  const handleEmailReport = () => {
-    // Simulate email sending
-    alert(`Report would be emailed to ${robot.customer.email}`)
+  const handleEmailReport = async () => {
+    setIsSendingEmail(true)
+    setEmailError(null)
+    
+    try {
+      // For now, just show a message that email functionality is coming soon
+      alert(`Email functionality coming soon! Report would be sent to ${robot.customer?.email || 'customer email'}`)
+    } catch (error) {
+      console.error('Error sending email:', error)
+      setEmailError('Failed to send email. Please try again.')
+    } finally {
+      setIsSendingEmail(false)
+    }
   }
 
   return (

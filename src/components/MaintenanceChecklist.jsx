@@ -16,16 +16,23 @@ import {
   AlertTriangle,
   Home,
   X,
-  Check
+  Check,
+  Loader2
 } from 'lucide-react'
+import firebaseStorageService from '../services/firebaseStorage'
 
 const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplete }) => {
   const navigate = useNavigate()
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [responses, setResponses] = useState(session.responses || {})
   const [images, setImages] = useState(session.images || {})
+  const [notes, setNotes] = useState(session.notes || {})
   const [showImageCapture, setShowImageCapture] = useState(false)
   const [currentNote, setCurrentNote] = useState('')
+  const [isCapturingImage, setIsCapturingImage] = useState(false)
+  const [isSavingNote, setIsSavingNote] = useState(false)
+  const [cameraError, setCameraError] = useState(null)
+  const [inspectionId] = useState(session.id || `inspection_${Date.now()}`)
 
   // Define all maintenance questions
   const questions = [
@@ -88,6 +95,15 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
       required: true
     },
     {
+      id: 'lte_device',
+      title: 'LTE Device Check',
+      question: 'Is the LTE device in good working order and secure inside the robot?',
+      type: 'yes_no_conditional',
+      required: true,
+      conditionalNote: true,
+      conditionalImage: true
+    },
+    {
       id: 'underside_inspected',
       title: 'Underside Inspection',
       question: 'Have you inspected the underside of the robot?',
@@ -101,16 +117,8 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
       type: 'image_note_required',
       required: true,
       dependsOn: 'underside_inspected',
-      dependsOnValue: 'yes'
-    },
-    {
-      id: 'lte_device',
-      title: 'LTE Device Check',
-      question: 'Is the LTE device in good working order and secure inside the robot?',
-      type: 'yes_no_conditional',
-      required: true,
-      conditionalNote: true,
-      conditionalImage: true
+      dependsOnValue: 'yes',
+      requiresImage: true
     }
   ]
 
@@ -150,7 +158,17 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
   const allQuestionsCompleted = () => {
     return questions.every(q => {
       if (!shouldShowQuestion(q)) return true
-      return responses[q.id] !== undefined
+      
+      // Check if question is answered
+      if (responses[q.id] === undefined) return false
+      
+      // Check if image is required and provided
+      if (q.requiresImage && responses[q.id] === 'completed') {
+        const questionImages = images[q.id] || []
+        return questionImages.length > 0
+      }
+      
+      return true
     })
   }
 
@@ -167,37 +185,98 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
     onSessionUpdate(updatedSession)
   }
 
-  const handleNoteChange = (note) => {
+  const handleNoteChange = async (note) => {
     setCurrentNote(note)
+    
+    // Save note to Firebase if not empty
+    if (note.trim() && !isSavingNote) {
+      setIsSavingNote(true)
+      try {
+        const result = await firebaseStorageService.saveNote(inspectionId, currentQuestion.id, note)
+        if (result.success) {
+          const newNotes = { ...notes, [currentQuestion.id]: note }
+          setNotes(newNotes)
+          
+          // Update session
+          const updatedSession = {
+            ...session,
+            responses,
+            images,
+            notes: newNotes
+          }
+          onSessionUpdate(updatedSession)
+        }
+      } catch (error) {
+        console.error('Error saving note:', error)
+      } finally {
+        setIsSavingNote(false)
+      }
+    }
   }
 
-  const handleImageCapture = () => {
-    // Simulate image capture
-    const imageData = {
-      id: Date.now(),
-      questionId: currentQuestion.id,
-      timestamp: new Date(),
-      filename: `${currentQuestion.id}_${Date.now()}.jpg`,
-      note: currentNote
-    }
+  const handleImageCapture = async () => {
+    setIsCapturingImage(true)
+    setCameraError(null)
     
-    const questionImages = images[currentQuestion.id] || []
-    const newImages = {
-      ...images,
-      [currentQuestion.id]: [...questionImages, imageData]
+    try {
+      // Capture and upload image using Firebase Storage
+      const result = await firebaseStorageService.captureAndUploadImage(
+        inspectionId, 
+        currentQuestion.id, 
+        currentNote
+      )
+      
+      if (result.success) {
+        // Update images state with real Firebase data
+        const imageData = {
+          id: result.data.metadata.id,
+          questionId: currentQuestion.id,
+          url: result.data.image.url,
+          filename: result.data.image.filename,
+          timestamp: result.data.image.timestamp,
+          note: currentNote,
+          path: result.data.image.path
+        }
+        
+        const questionImages = images[currentQuestion.id] || []
+        const newImages = {
+          ...images,
+          [currentQuestion.id]: [...questionImages, imageData]
+        }
+        
+        setImages(newImages)
+        setCurrentNote('')
+        setShowImageCapture(false)
+        
+        // Update session with Firebase data
+        const updatedSession = {
+          ...session,
+          responses,
+          images: newImages,
+          notes
+        }
+        onSessionUpdate(updatedSession)
+        
+        // Save session data to Firebase
+        await firebaseStorageService.updateInspectionData(inspectionId, {
+          responses,
+          images: newImages,
+          notes,
+          robot_serial: robot.serialNumber,
+          technician: user.name,
+          customer: robot.customer || 'Unknown Customer',
+          date: new Date().toISOString().split('T')[0],
+          status: 'in_progress'
+        })
+      } else {
+        setCameraError(result.error)
+      }
+    } catch (error) {
+      console.error('Error capturing image:', error)
+      setCameraError('Failed to capture image. Please try again.')
+    } finally {
+      setIsCapturingImage(false)
     }
-    
-    setImages(newImages)
-    setCurrentNote('')
-    setShowImageCapture(false)
-    
-    // Update session
-    const updatedSession = {
-      ...session,
-      responses,
-      images: newImages
-    }
-    onSessionUpdate(updatedSession)
   }
 
   const handleNext = () => {
@@ -214,51 +293,69 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
     }
   }
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (allQuestionsCompleted()) {
-      // Create completion record with timestamps
-      const completionData = {
-        id: `RPT-${Date.now()}`,
-        sessionId: session.id,
-        robotId: robot.id,
-        robotSerial: robot.serialNumber,
-        robotModel: robot.model,
-        technicianId: user.id,
-        technicianName: user.name,
-        customer: robot.customer || 'Unknown Customer',
-        customerAddress: robot.address || 'Unknown Address',
-        startTime: session.startTime,
-        completedTime: new Date().toISOString(),
-        completedDate: new Date().toLocaleDateString(),
-        completedTimeFormatted: new Date().toLocaleTimeString(),
-        duration: calculateDuration(session.startTime, new Date()),
-        responses: responses,
-        images: images,
-        status: 'completed',
-        issues: countIssues(responses),
-        photos: countPhotos(images),
-        notes: generateSummaryNotes(responses),
-        overallStatus: determineOverallStatus(responses),
-        nextMaintenance: calculateNextMaintenance()
-      }
+      try {
+        // Create completion record with timestamps
+        const completionData = {
+          id: `RPT-${Date.now()}`,
+          sessionId: session.id,
+          robotId: robot.id,
+          robotSerial: robot.serialNumber,
+          robotModel: robot.model,
+          technicianId: user.id,
+          technicianName: user.name,
+          customer: robot.customer || 'Unknown Customer',
+          customerAddress: robot.address || 'Unknown Address',
+          startTime: session.startTime,
+          completedTime: new Date().toISOString(),
+          completedDate: new Date().toLocaleDateString(),
+          completedTimeFormatted: new Date().toLocaleTimeString(),
+          duration: calculateDuration(session.startTime, new Date()),
+          responses: responses,
+          images: images,
+          notes: notes,
+          status: 'completed',
+          issues: countIssues(responses),
+          photos: countPhotos(images),
+          notes_summary: generateSummaryNotes(responses),
+          overallStatus: determineOverallStatus(responses),
+          nextMaintenance: calculateNextMaintenance()
+        }
 
-      // Store the completion record (in a real app, this would be sent to backend)
-      const existingReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
-      existingReports.push(completionData)
-      localStorage.setItem('maintenanceReports', JSON.stringify(existingReports))
+        // Save final inspection data to Firebase
+        await firebaseStorageService.saveInspectionData(inspectionId, completionData)
 
-      // Update session status
-      const updatedSession = {
-        ...session,
-        responses,
-        images,
-        status: 'completed',
-        completedTime: new Date().toISOString()
+        // Store the completion record locally as backup
+        const existingReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
+        existingReports.push(completionData)
+        localStorage.setItem('maintenanceReports', JSON.stringify(existingReports))
+
+        // Update session status
+        const updatedSession = {
+          ...session,
+          responses,
+          images,
+          notes,
+          status: 'completed',
+          completedTime: new Date().toISOString()
+        }
+        
+        onSessionUpdate(updatedSession)
+        onComplete(completionData)
+        navigate('/complete')
+      } catch (error) {
+        console.error('Error completing inspection:', error)
+        // Still allow completion even if Firebase save fails
+        const completionData = {
+          id: `RPT-${Date.now()}`,
+          sessionId: session.id,
+          status: 'completed',
+          error: 'Failed to save to Firebase'
+        }
+        onComplete(completionData)
+        navigate('/complete')
       }
-      
-      onSessionUpdate(updatedSession)
-      onComplete(completionData)
-      navigate('/complete')
     }
   }
 
@@ -434,11 +531,14 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
         )
 
       case 'image_note_required':
+        const questionImages = images[currentQuestion.id] || []
+        const hasRequiredImage = questionImages.length > 0
+        
         return (
           <div className="space-y-4">
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-800 mb-4">
-                This question requires photo documentation and optional notes.
+                <strong>This question requires photo documentation and optional notes.</strong>
               </p>
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -447,23 +547,60 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
                     placeholder="Add any observations..."
                     value={currentNote}
                     onChange={(e) => handleNoteChange(e.target.value)}
+                    disabled={isSavingNote}
                   />
+                  {isSavingNote && (
+                    <div className="flex items-center text-sm text-blue-600">
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      Saving note...
+                    </div>
+                  )}
                 </div>
-                <Button onClick={() => setShowImageCapture(true)} variant="outline">
-                  <Camera className="h-4 w-4 mr-2" />
-                  Take Required Photo
+                
+                <Button 
+                  onClick={() => setShowImageCapture(true)} 
+                  variant="outline"
+                  disabled={isCapturingImage}
+                >
+                  {isCapturingImage ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Capturing...
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="h-4 w-4 mr-2" />
+                      Take Required Photo
+                    </>
+                  )}
                 </Button>
+                
+                {cameraError && (
+                  <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                    {cameraError}
+                  </div>
+                )}
+                
                 {questionImages.length > 0 && (
                   <div className="space-y-2">
                     <div className="text-sm text-green-600">
                       ✓ {questionImages.length} photo(s) captured
                     </div>
-                    <Button
-                      onClick={() => handleResponse(currentQuestion.id, 'completed')}
-                      className="w-full"
-                    >
-                      Mark as Complete
-                    </Button>
+                    {hasRequiredImage && (
+                      <Button
+                        onClick={() => handleResponse(currentQuestion.id, 'completed')}
+                        className="w-full"
+                        disabled={!hasRequiredImage}
+                      >
+                        Mark as Complete
+                      </Button>
+                    )}
+                  </div>
+                )}
+                
+                {!hasRequiredImage && (
+                  <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                    ⚠️ At least one photo is required to complete this question.
                   </div>
                 )}
               </div>
@@ -614,8 +751,12 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
                 <div className="text-center">
                   <Camera className="h-12 w-12 text-gray-400 mx-auto mb-2" />
                   <p className="text-gray-600">Camera preview</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Camera will activate when you capture
+                  </p>
                 </div>
               </div>
+              
               {currentNote && (
                 <div className="p-3 bg-blue-50 rounded-lg">
                   <p className="text-sm text-blue-800">
@@ -623,14 +764,40 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
                   </p>
                 </div>
               )}
+              
+              {cameraError && (
+                <div className="p-3 bg-red-50 rounded-lg">
+                  <p className="text-sm text-red-800">
+                    <strong>Error:</strong> {cameraError}
+                  </p>
+                </div>
+              )}
+              
               <div className="flex gap-2">
-                <Button onClick={handleImageCapture} className="flex-1">
-                  <Camera className="h-4 w-4 mr-2" />
-                  Capture Photo
+                <Button 
+                  onClick={handleImageCapture} 
+                  className="flex-1"
+                  disabled={isCapturingImage}
+                >
+                  {isCapturingImage ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Capturing...
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="h-4 w-4 mr-2" />
+                      Capture Photo
+                    </>
+                  )}
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => setShowImageCapture(false)}
+                  onClick={() => {
+                    setShowImageCapture(false)
+                    setCameraError(null)
+                  }}
+                  disabled={isCapturingImage}
                 >
                   Cancel
                 </Button>

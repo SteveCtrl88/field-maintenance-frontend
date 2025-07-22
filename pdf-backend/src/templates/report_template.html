@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html data-bs-theme="light" lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>Maintenance Report</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=ABeeZee&amp;display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Afacad&amp;display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat+Alternates&amp;display=swap">
+    <style>
+        @page {
+            size: A4;
+            margin: 0.5in;
+        }
+        body {
+            font-family: 'ABeeZee', sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .container {
+            max-width: 100%;
+            padding: 0;
+        }
+        .table {
+            font-size: 10px;
+        }
+        .table td, .table th {
+            padding: 0.25rem;
+            vertical-align: top;
+        }
+        .maintenance-table {
+            font-size: 12px;
+        }
+        .maintenance-table td, .maintenance-table th {
+            padding: 0.5rem;
+        }
+        .header-section {
+            background: #000000;
+            color: white;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+        .logo {
+            max-width: 200px;
+            height: auto;
+        }
+        .robot-image {
+            max-width: 200px;
+            height: auto;
+        }
+        .inspection-images img {
+            max-width: 150px;
+            height: auto;
+            margin-bottom: 0.5rem;
+        }
+        h1 {
+            font-size: 20px;
+            font-family: 'Afacad', sans-serif;
+        }
+        h4 {
+            font-size: 16px;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+        h6 {
+            font-size: 12px;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header Section -->
+    <div class="container header-section">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1>Monthly Preventative Maintenance Report</h1>
+            </div>
+            <div class="col-md-6 text-end">
+                <img class="logo" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjUwIiB2aWV3Qm94PSIwIDAgMjAwIDUwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8dGV4dCB4PSIxMCIgeT0iMzAiIGZpbGw9IndoaXRlIiBmb250LXNpemU9IjI0IiBmb250LWZhbWlseT0iQXJpYWwiPkF1dG9ub21pPC90ZXh0Pgo8L3N2Zz4K" alt="Autonomi Logo">
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Details Section -->
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="table-responsive">
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <td><strong>Customer Name</strong></td>
+                                <td>{{ customer_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Site Address</strong></td>
+                                <td>{{ site_address }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Report Date</strong></td>
+                                <td>{{ report_date }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Technician name</strong></td>
+                                <td>{{ technician_name }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="2"></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Robot Details</strong></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Nickname</strong></td>
+                                <td>{{ robot_nickname }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Model</strong></td>
+                                <td>{{ robot_model }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Serial Number</strong></td>
+                                <td>{{ robot_serial }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-6 text-center">
+                <img class="robot-image" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI1MCIgdmlld0JveD0iMCAwIDIwMCAyNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHg9IjUwIiB5PSI1MCIgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxNTAiIGZpbGw9IiNjY2MiIHN0cm9rZT0iIzMzMyIgc3Ryb2tlLXdpZHRoPSIyIi8+Cjx0ZXh0IHg9IjEwMCIgeT0iMTMwIiBmaWxsPSIjMzMzIiBmb250LXNpemU9IjE0IiBmb250LWZhbWlseT0iQXJpYWwiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlJvYm90PC90ZXh0Pgo8L3N2Zz4K" alt="Robot Image">
+            </div>
+        </div>
+    </div>
+
+    <!-- Maintenance Items Table -->
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="table-responsive">
+                    <table class="table table-bordered maintenance-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Item</th>
+                                <th>Status</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in maintenance_items %}
+                            <tr>
+                                <td>{{ item.item }}</td>
+                                <td>{{ format_status(item.status) }}</td>
+                                <td>{{ item.notes if item.notes else '' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Images Section -->
+    {% if images %}
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h4>Images:</h4>
+            </div>
+        </div>
+        <div class="row inspection-images">
+            {% for image in images %}
+            <div class="col-md-3 text-center mb-3">
+                <img src="{{ image.url if image.url else '#' }}" class="img-fluid" alt="Inspection Image">
+                <h6>{{ image.step_name if image.step_name else 'Inspection Image' }}<br>
+                    {{ image.timestamp if image.timestamp else '' }}</h6>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Notes Section -->
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h4>Notes:</h4>
+                <p>{{ notes if notes else 'No additional notes provided.' }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-12 text-center">
+                <small class="text-muted">
+                    Report generated on {{ moment().format('YYYY-MM-DD HH:mm:ss') }} | Autonomi Field Maintenance System
+                </small>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
+
