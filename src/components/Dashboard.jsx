@@ -123,6 +123,8 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
         return <CheckCircle className="h-4 w-4 text-green-600" />
       case 'in_progress':
         return <Clock className="h-4 w-4 text-yellow-600" />
+      case 'scheduled':
+        return <Calendar className="h-4 w-4 text-blue-600" />
       default:
         return <AlertTriangle className="h-4 w-4 text-red-600" />
     }
@@ -134,6 +136,8 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
         return 'bg-green-100 text-green-800'
       case 'in_progress':
         return 'bg-yellow-100 text-yellow-800'
+      case 'scheduled':
+        return 'bg-blue-100 text-blue-800'
       default:
         return 'bg-red-100 text-red-800'
     }
@@ -414,6 +418,17 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                               Edit
                             </Button>
                           )}
+                          {item.status === 'scheduled' && (
+                            <Button 
+                              size="sm" 
+                              variant="default"
+                              onClick={() => handleEditInspection(item.id)}
+                              className="h-8 text-xs"
+                            >
+                              <Clock className="h-3 w-3 mr-1" />
+                              Start
+                            </Button>
+                          )}
                         </div>
                         {item.status === 'in_progress' && (
                           <div className="text-xs text-blue-600 mt-2">
@@ -454,6 +469,16 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                             >
                               <Edit className="h-3 w-3 mr-1" />
                               Edit
+                            </Button>
+                          )}
+                          {item.status === 'scheduled' && (
+                            <Button 
+                              size="sm" 
+                              variant="default"
+                              onClick={() => handleEditInspection(item.id)}
+                            >
+                              <Clock className="h-4 w-4 mr-1" />
+                              Start Inspection
                             </Button>
                           )}
                         </div>
