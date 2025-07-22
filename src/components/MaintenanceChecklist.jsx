@@ -146,15 +146,51 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
     setIsCapturingImage(true)
     
     try {
-      // Simulate image capture and upload to Firebase Storage
+      // Request camera access
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment', // Use back camera if available
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } 
+      })
+      
+      // Create video element to capture frame
+      const video = document.createElement('video')
+      video.srcObject = stream
+      video.play()
+      
+      // Wait for video to load
+      await new Promise(resolve => {
+        video.onloadedmetadata = resolve
+      })
+      
+      // Wait a bit for camera to adjust
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      // Create canvas to capture frame
+      const canvas = document.createElement('canvas')
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(video, 0, 0)
+      
+      // Stop camera stream
+      stream.getTracks().forEach(track => track.stop())
+      
+      // Convert to data URL
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8)
+      
+      // Create image data
       const imageData = {
         id: `img_${Date.now()}`,
         questionId: currentQuestion.id,
-        url: `/api/placeholder/400/300?t=${Date.now()}`,
+        url: dataUrl,
         filename: `inspection_${currentQuestion.id}_${Date.now()}.jpg`,
         timestamp: new Date().toISOString(),
         note: currentNote || '',
-        uploadedToFirebase: true
+        uploadedToFirebase: false,
+        size: dataUrl.length
       }
       
       const questionImages = images[currentQuestion.id] || []
@@ -178,6 +214,17 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
       
     } catch (error) {
       console.error('Error capturing image:', error)
+      
+      // Show user-friendly error message
+      if (error.name === 'NotAllowedError') {
+        alert('Camera access denied. Please allow camera permissions and try again.')
+      } else if (error.name === 'NotFoundError') {
+        alert('No camera found on this device.')
+      } else {
+        alert('Error accessing camera: ' + error.message)
+      }
+      
+      setShowImageCapture(false)
     } finally {
       setIsCapturingImage(false)
     }
