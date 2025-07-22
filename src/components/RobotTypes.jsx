@@ -282,8 +282,16 @@ const RobotTypes = ({ user }) => {
               <CardContent>
                 <div className="space-y-4">
                   {/* Robot Image */}
-                  <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-                    <Bot className="h-12 w-12 text-gray-400" />
+                  <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                    {robotType.image && robotType.image !== '/api/placeholder/200/150' ? (
+                      <img 
+                        src={robotType.image} 
+                        alt={robotType.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Bot className="h-12 w-12 text-gray-400" />
+                    )}
                   </div>
 
                   {/* Description */}
