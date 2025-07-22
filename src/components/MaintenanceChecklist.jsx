@@ -122,8 +122,10 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
     }
   ]
 
-  const currentQuestion = questions[currentQuestionIndex]
+  // Ensure we have valid question index
   const totalQuestions = questions.length
+  const validQuestionIndex = Math.min(currentQuestionIndex, totalQuestions - 1)
+  const currentQuestion = questions[validQuestionIndex] || questions[0]
   const completedQuestions = Object.keys(responses).length
   const progress = (completedQuestions / totalQuestions) * 100
 
