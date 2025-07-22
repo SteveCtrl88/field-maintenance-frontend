@@ -107,7 +107,9 @@ const UserManagement = () => {
 
   const handleSave = () => {
     // Here you would save to backend
-    console.log('Saving user:', formData)
+    if (import.meta.env.DEV) {
+      console.log('Saving user:', formData)
+    }
     setIsDialogOpen(false)
   }
 

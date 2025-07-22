@@ -318,10 +318,17 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
       try {
         const result = await apiService.createInspection(completionData)
         if (result.success) {
-          console.log('Inspection saved to Firebase:', result.data)
+          if (import.meta.env.DEV) {
+            console.log('Inspection saved to Firebase:', result.data)
+          }
         }
       } catch (apiError) {
-        console.warn('Firebase API unavailable, saving locally only:', apiError)
+        if (import.meta.env.DEV) {
+          console.warn(
+            'Firebase API unavailable, saving locally only:',
+            apiError,
+          )
+        }
       }
 
       // Always store locally as primary storage

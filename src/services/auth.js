@@ -72,10 +72,17 @@ class AuthService {
       if (result.success) {
         // Send ID token to backend for validation
         try {
-          const backendResponse = await apiService.login('', '', result.idToken);
-          console.log('Backend validation successful:', backendResponse);
+          const backendResponse = await apiService.login('', '', result.idToken)
+          if (import.meta.env.DEV) {
+            console.log('Backend validation successful:', backendResponse)
+          }
         } catch (backendError) {
-          console.warn('Backend validation failed, but Firebase auth succeeded:', backendError);
+          if (import.meta.env.DEV) {
+            console.warn(
+              'Backend validation failed, but Firebase auth succeeded:',
+              backendError,
+            )
+          }
           // Continue with Firebase auth even if backend fails
         }
         

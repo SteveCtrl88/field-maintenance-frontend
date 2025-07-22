@@ -31,7 +31,9 @@ const MaintenanceHandler = ({ maintenanceSession, scannedRobot, user, onSessionU
         const response = await apiService.getInspection(inspectionId)
         inspection = response.data || response
       } catch {
-        console.log('API not available, checking localStorage')
+        if (import.meta.env.DEV) {
+          console.log('API not available, checking localStorage')
+        }
       }
 
       // Fallback to localStorage if API fails
@@ -82,7 +84,9 @@ const MaintenanceHandler = ({ maintenanceSession, scannedRobot, user, onSessionU
             progress: 0
           })
         } catch {
-          console.log('Could not update inspection status via API')
+          if (import.meta.env.DEV) {
+            console.log('Could not update inspection status via API')
+          }
         }
       }
 
