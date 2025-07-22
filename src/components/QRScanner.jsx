@@ -229,13 +229,22 @@ const QRScanner = ({ onRobotScanned, user }) => {
           <Card className="bg-blue-50 border-blue-200">
             <CardContent className="pt-6">
               <div className="text-sm text-blue-800">
-                <p className="font-medium mb-2">Demo Mode - Available Robot Serial Numbers:</p>
+                <p className="font-medium mb-2">Available Robots:</p>
                 <div className="space-y-1">
-                  {mockRobots.map(robot => (
-                    <p key={robot.id}>
-                      <code className="bg-blue-100 px-2 py-1 rounded">{robot.serialNumber}</code> - {robot.model}
-                    </p>
-                  ))}
+                  {robots.length > 0 ? (
+                    robots.slice(0, 5).map(robot => (
+                      <p key={robot.id}>
+                        <code className="bg-blue-100 px-2 py-1 rounded">
+                          {robot.serialNumber || robot.serial_number}
+                        </code> - {robot.model || robot.type || 'Unknown Model'}
+                      </p>
+                    ))
+                  ) : (
+                    <p>Loading robots from database...</p>
+                  )}
+                  {robots.length > 5 && (
+                    <p className="text-blue-600">...and {robots.length - 5} more robots</p>
+                  )}
                 </div>
               </div>
             </CardContent>
