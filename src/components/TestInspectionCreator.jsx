@@ -94,7 +94,7 @@ const TestInspectionCreator = ({ onInspectionCreated }) => {
             id: `inspection-${customer.id || customer._id}-${robot.serialNumber}-${Date.now()}`,
             robotSerial: robot.serialNumber,
             robotModel: robot.model || robot.type || 'Unknown Model',
-            customer: customer.companyName || customer.name,
+            robotId: robot.id || robot._id,
             customerName: customer.companyName || customer.name,
             customerId: customer.id || customer._id,
             customerAddress: customer.address || 'No address provided',
@@ -104,7 +104,6 @@ const TestInspectionCreator = ({ onInspectionCreated }) => {
             issues: 0,
             notes: `Inspection scheduled for ${robot.serialNumber}`,
             status: 'scheduled',
-            progress: 0, // 0% completion as requested
             type: 'maintenance_inspection',
             scheduledDate: new Date().toISOString(),
             created_at: new Date().toISOString(),
@@ -117,10 +116,37 @@ const TestInspectionCreator = ({ onInspectionCreated }) => {
             duration: null,
             nextMaintenance: null,
             sessionId: null,
-            photos: [],
-            checklist: {
-              items: []
-            }
+            images: {},
+            display_working: null,
+            display_working_note: '',
+            display_working_img_url: '',
+            robot_charging: null,
+            robot_charging_note: '',
+            robot_charging_img_url: '',
+            charger_working: null,
+            charger_working_note: '',
+            charger_working_img_url: '',
+            damage_check: null,
+            damage_check_note: '',
+            damage_check_img_url: '',
+            door_1_working: null,
+            door_1_working_note: '',
+            door_1_working_img_url: '',
+            door_2_working: null,
+            door_2_working_note: '',
+            door_2_working_img_url: '',
+            door_3_working: null,
+            door_3_working_note: '',
+            door_3_working_img_url: '',
+            door_4_working: null,
+            door_4_working_note: '',
+            door_4_working_img_url: '',
+            lte_device: null,
+            lte_device_note: '',
+            lte_device_img_url: '',
+            underside_inspection: null,
+            underside_inspection_note: '',
+            underside_inspection_img_url: ''
           }
 
           const response = await apiService.createInspection(inspectionData)
