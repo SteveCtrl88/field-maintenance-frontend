@@ -57,8 +57,9 @@ def create_html_report(report_data):
     
     template = Template(template_content)
     
-    # Add format_status function to template context
+    # Add helper values to template context
     report_data['format_status'] = format_status
+    report_data.setdefault('generated_time', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     
     return template.render(**report_data)
 
