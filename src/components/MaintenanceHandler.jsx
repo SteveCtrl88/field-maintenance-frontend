@@ -12,8 +12,9 @@ const MaintenanceHandler = ({ maintenanceSession, scannedRobot, user, onSessionU
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const inspectionId = searchParams.get('edit')
-    
+    const inspectionId =
+      searchParams.get('inspectionId') || searchParams.get('edit')
+
     if (inspectionId && !maintenanceSession) {
       // Load scheduled inspection from API or localStorage
       loadScheduledInspection(inspectionId)
