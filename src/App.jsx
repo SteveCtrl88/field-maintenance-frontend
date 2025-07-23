@@ -52,16 +52,12 @@ function App() {
   }, []);
 
   const handleLogin = (user) => {
-    // Save user to localStorage for userService compatibility
-    localStorage.setItem('currentUser', JSON.stringify(user))
     setIsAuthenticated(true)
     setCurrentUser(user)
   }
 
   const handleLogout = () => {
     authService.logout();
-    // Clear localStorage for userService compatibility
-    localStorage.removeItem('currentUser')
     setIsAuthenticated(false)
     setCurrentUser(null)
     setScannedRobot(null)

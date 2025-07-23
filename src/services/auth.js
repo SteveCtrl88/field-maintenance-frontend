@@ -24,7 +24,8 @@ class AuthService {
           id: user.uid,
           email: user.email,
           name: user.displayName || user.email.split('@')[0],
-          role: user.email === 'admin@company.com' ? 'admin' : 'user'
+          role: user.email === 'steve@ctrlrobotics.com' ? 'admin' : 
+                user.email === 'tech@ctrlrobotics.com' ? 'technician' : 'user'
         };
         this.setUser(userData);
       } else {

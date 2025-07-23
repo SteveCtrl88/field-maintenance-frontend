@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import userService from '../services/userService'
+import authService from '../services/auth.js'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -15,10 +15,10 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
   const [inspections, setInspections] = useState([])
   const [showTestCreator, setShowTestCreator] = useState(false)
 
-  // Get current user and role information
-  const currentUser = userService.getCurrentUser() || user
-  const isAdmin = userService.isAdmin()
-  const isTechnician = userService.isTechnician()
+  // Get current user and role information from Firebase Auth
+  const currentUser = user || authService.getCurrentUser()
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.email === 'steve@ctrlrobotics.com'
+  const isTechnician = currentUser?.role === 'technician'
 
   // Load data from API on component mount
   useEffect(() => {
@@ -81,8 +81,13 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
         return timeB - timeA
       })
       
-      // Apply role-based filtering
-      const filteredInspections = userService.filterInspectionsByRole(combinedInspections)
+      // Apply role-based filtering directly
+      const filteredInspections = isAdmin 
+        ? combinedInspections 
+        : combinedInspections.filter(inspection => 
+            inspection.technicianId === currentUser?.id || 
+            inspection.technicianId === currentUser?.uid
+          )
       
       // Ensure we have arrays
       setCustomers(Array.isArray(customersData) ? customersData : [])
