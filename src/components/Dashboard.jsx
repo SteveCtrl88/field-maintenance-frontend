@@ -34,6 +34,24 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
     return { customerId: parts[1] || null, robotSerial: null }
   }
 
+  const customerMap = useMemo(() => {
+    const map = {}
+    customers.forEach((c) => {
+      const id = c.id || c._id
+      if (id) map[id] = c
+    })
+    return map
+  }, [customers])
+
+  const parseInspectionId = (id) => {
+    if (!id) return { customerId: null, robotSerial: null }
+    const parts = id.split('-')
+    if (parts.length >= 4) {
+      return { customerId: parts[1], robotSerial: parts.slice(2, parts.length - 1).join('-') }
+    }
+    return { customerId: parts[1] || null, robotSerial: null }
+  }
+
   // Get current user and role information from Firebase Auth
   const currentUser = user || authService.getCurrentUser()
   const isAdmin = currentUser?.role === 'admin' || currentUser?.email === 'steve@ctrlrobotics.com'
@@ -99,12 +117,16 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
       // Save to state
       setCustomers(customersData);
       setCustomersToVisit(filteredCustomers)
+
+      setCustomers(filteredCustomers)
       setInspections(filteredInspections)
     } catch (error) {
       console.error('Error loading dashboard data:', error)
       setInspections([])
       setCustomers([]);
       setCustomersToVisit([])
+
+      setCustomers([])
     }
   }
 
@@ -428,11 +450,17 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 sm:space-y-4">
+
                   {Array.isArray(inspections) && inspections.length > 0 ? (
                     inspections.map((item) => {
                     const { customerId, robotSerial } = parseInspectionId(item.id)
                     const customer = customerMap[customerId]
                     const dateText = item.completedDate || item.date;
+
+                  {Array.isArray(inspections) && inspections.length > 0 ? inspections.map((item) => {
+                    const { customerId, robotSerial } = parseInspectionId(item.id)
+                    const customer = customerMap[customerId]
+
                     const robotText = item.robotSerial || item.robot_serial || robotSerial || 'Unknown Robot'
                     const customerText = item.customer || item.customerName || (customer?.companyName || customer?.name) || 'Unknown Customer'
                     return (
@@ -557,6 +585,7 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                   );
                 })
                   ) : (
+                }) : (
                     <div className="text-center py-8 text-gray-500">
                       <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                       <p className="text-sm">No recent maintenance activities</p>
