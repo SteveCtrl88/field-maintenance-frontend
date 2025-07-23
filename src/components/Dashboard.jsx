@@ -14,6 +14,25 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
   const [customers, setCustomers] = useState([])
   const [inspections, setInspections] = useState([])
   const [showTestCreator, setShowTestCreator] = useState(false)
+  const [customersToVisit, setCustomersToVisit] = useState([])
+
+  const customerMap = useMemo(() => {
+    const map = {}
+    customers.forEach((c) => {
+      const id = c.id || c._id
+      if (id) map[id] = c
+    })
+    return map
+  }, [customers])
+
+  const parseInspectionId = (id) => {
+    if (!id) return { customerId: null, robotSerial: null }
+    const parts = id.split('-')
+    if (parts.length >= 4) {
+      return { customerId: parts[1], robotSerial: parts.slice(2, parts.length - 1).join('-') }
+    }
+    return { customerId: parts[1] || null, robotSerial: null }
+  }
 
   const customerMap = useMemo(() => {
     const map = {}
@@ -36,7 +55,6 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
   // Get current user and role information from Firebase Auth
   const currentUser = user || authService.getCurrentUser()
   const isAdmin = currentUser?.role === 'admin' || currentUser?.email === 'steve@ctrlrobotics.com'
-  const isTechnician = currentUser?.role === 'technician'
 
   // Load data from API on component mount
   useEffect(() => {
@@ -97,12 +115,22 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
       })
 
       // Save to state
+ 8wl7jt-codex/recreate-pnpm-lock.yaml
+      setCustomers(customersData);
+      setCustomersToVisit(filteredCustomers)
+=======
       setCustomers(filteredCustomers)
+ main
       setInspections(filteredInspections)
     } catch (error) {
       console.error('Error loading dashboard data:', error)
       setInspections([])
+ 8wl7jt-codex/recreate-pnpm-lock.yaml
+      setCustomers([]);
+      setCustomersToVisit([])
+=======
       setCustomers([])
+ main
     }
   }
 
@@ -343,7 +371,7 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 sm:space-y-4">
-                  {Array.isArray(customers) && customers.length > 0 ? customers.slice(0, 3).map((customer) => {
+                  {Array.isArray(customersToVisit) && customersToVisit.length > 0 ? customersToVisit.slice(0, 3).map((customer) => {
                     // Calculate days until next inspection
                     const today = new Date()
                     const nextInspection = customer.inspection_schedule?.next_inspection ? new Date(customer.inspection_schedule.next_inspection) : null
@@ -429,6 +457,10 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                   {Array.isArray(inspections) && inspections.length > 0 ? inspections.map((item) => {
                     const { customerId, robotSerial } = parseInspectionId(item.id)
                     const customer = customerMap[customerId]
+ 8wl7jt-codex/recreate-pnpm-lock.yaml
+                    const dateText = item.completedDate || item.date;
+
+ main
                     const robotText = item.robotSerial || item.robot_serial || robotSerial || 'Unknown Robot'
                     const customerText = item.customer || item.customerName || (customer?.companyName || customer?.name) || 'Unknown Customer'
                     return (
@@ -450,7 +482,7 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                         <div className="flex items-center justify-between">
                           <div className="text-xs text-gray-600 flex items-center">
                             <Calendar className="h-3 w-3 mr-1" />
-                            {item.date}
+                            {dateText}
                           </div>
                           {item.status === 'in_progress' && (
                             <Button 
@@ -511,7 +543,7 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                           <div className="text-right">
                             <div className="text-sm text-gray-600 flex items-center">
                               <Calendar className="h-4 w-4 mr-1" />
-                              {item.date}
+                              {dateText}
                             </div>
                           </div>
                           <Badge className={getStatusColor(item.status)}>
