@@ -138,19 +138,42 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
         status: 'completed',
         completedTime: new Date().toISOString(),
         completedDate: new Date().toLocaleDateString(),
-        duration: '30 minutes' // Calculate actual duration
+        completedTimeFormatted: new Date().toLocaleString(),
+        endTime: new Date(),
+        duration: Math.round((new Date() - new Date(session.startTime)) / (1000 * 60)) + ' minutes',
+        overallStatus: 'completed'
       }
 
-      // Save to localStorage
+      // Save to localStorage as backup
       const existingReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
       existingReports.push(completedSession)
       localStorage.setItem('maintenanceReports', JSON.stringify(existingReports))
+
+      // Try to save to Firebase
+      try {
+        // Update the original inspection in Firebase
+        await apiService.updateInspection(session.id, {
+          status: 'completed',
+          overallStatus: 'completed',
+          responses,
+          images,
+          notes,
+          completedTime: new Date().toISOString(),
+          completedDate: new Date().toLocaleDateString(),
+          completedTimeFormatted: new Date().toLocaleString(),
+          endTime: new Date(),
+          duration: Math.round((new Date() - new Date(session.startTime)) / (1000 * 60)) + ' minutes'
+        })
+        console.log('Inspection updated in Firebase successfully')
+      } catch (firebaseError) {
+        console.error('Firebase update failed, data saved locally:', firebaseError)
+      }
 
       if (onComplete) {
         onComplete(completedSession)
       }
 
-      navigate('/completion', { state: { session: completedSession } })
+      navigate('/completion', { state: { session: completedSession, robot, user } })
     } catch (error) {
       console.error('Error completing inspection:', error)
     } finally {

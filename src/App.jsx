@@ -253,6 +253,17 @@ function App() {
                 <Navigate to="/dashboard" replace />
             } 
           />
+          <Route 
+            path="/completion" 
+            element={
+              isAuthenticated ? 
+                <CompletionScreen 
+                  user={currentUser}
+                  onNewMaintenance={handleNewMaintenance}
+                /> : 
+                <Navigate to="/login" replace />
+            } 
+          />
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>

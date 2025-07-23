@@ -1,5 +1,5 @@
-import { useNavigate } from 'react-router-dom'
-
+import { useState } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -18,8 +18,16 @@ import {
 } from 'lucide-react'
 import pdfService from '../services/pdfService'
 
-const CompletionScreen = ({ session, robot, user, onNewMaintenance }) => {
+const CompletionScreen = ({ user, onNewMaintenance }) => {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { session, robot } = location.state || {}
+
+  // If no session data, redirect to dashboard
+  if (!session) {
+    navigate('/dashboard')
+    return null
+  }
 
   const handleNewMaintenance = () => {
     onNewMaintenance()
