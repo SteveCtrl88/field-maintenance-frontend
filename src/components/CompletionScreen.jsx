@@ -66,7 +66,8 @@ const CompletionScreen = ({ user, onNewMaintenance }) => {
   const handleEmailReport = async () => {
     try {
       // For now, just show a message that email functionality is coming soon
-      alert(`Email functionality coming soon! Report would be sent to ${robot.customer?.email || 'customer email'}`)
+      const customerEmail = robot?.customer?.email || robot?.customerEmail || 'customer email'
+      alert(`Email functionality coming soon! Report would be sent to ${customerEmail}`)
     } catch (error) {
       console.error('Error sending email:', error)
     }
@@ -138,7 +139,7 @@ const CompletionScreen = ({ user, onNewMaintenance }) => {
                     <User className="h-4 w-4 text-gray-500" />
                     <div>
                       <p className="text-sm font-medium text-gray-500">Technician</p>
-                      <p className="text-base">{user.name}</p>
+                      <p className="text-base">{user?.name || user?.email || 'Unknown Technician'}</p>
                     </div>
                   </div>
                 </div>
@@ -157,22 +158,22 @@ const CompletionScreen = ({ user, onNewMaintenance }) => {
               <CardContent className="space-y-4">
                 <div>
                   <p className="text-sm font-medium text-gray-500">Serial Number</p>
-                  <p className="text-lg font-mono">{robot.serialNumber}</p>
+                  <p className="text-lg font-mono">{robot?.serialNumber || robot?.serial_number || 'Unknown'}</p>
                 </div>
                 
                 <div>
                   <p className="text-sm font-medium text-gray-500">Model</p>
-                  <p className="text-base">{robot.model}</p>
+                  <p className="text-base">{robot?.model || robot?.robotModel || 'Unknown Model'}</p>
                 </div>
 
                 <div>
                   <p className="text-sm font-medium text-gray-500">Customer</p>
-                  <p className="text-base">{robot.customer.name}</p>
+                  <p className="text-base">{robot?.customer?.name || robot?.customerName || 'Unknown Customer'}</p>
                 </div>
 
                 <div>
                   <p className="text-sm font-medium text-gray-500">Location</p>
-                  <p className="text-base">{robot.location}</p>
+                  <p className="text-base">{robot?.location || robot?.customerAddress || 'Unknown Location'}</p>
                 </div>
               </CardContent>
             </Card>
@@ -202,7 +203,7 @@ const CompletionScreen = ({ user, onNewMaintenance }) => {
                   <div className="text-center">
                     <Mail className="h-6 w-6 mx-auto mb-1" />
                     <div className="text-sm">Email to Customer</div>
-                    <div className="text-xs opacity-75">{robot.customer.email}</div>
+                    <div className="text-xs opacity-75">{robot?.customer?.email || robot?.customerEmail || 'customer@example.com'}</div>
                   </div>
                 </Button>
               </div>

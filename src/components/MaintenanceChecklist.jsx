@@ -151,17 +151,13 @@ const MaintenanceChecklist = ({ session, robot, user, onSessionUpdate, onComplet
 
       // Try to save to Firebase
       try {
-        // Update the original inspection in Firebase
+        // Update the original inspection in Firebase with only completion data
         await apiService.updateInspection(session.id, {
           status: 'completed',
           overallStatus: 'completed',
-          responses,
-          images,
-          notes,
+          maintenance_items: responses, // Backend expects this field name
           completedTime: new Date().toISOString(),
           completedDate: new Date().toLocaleDateString(),
-          completedTimeFormatted: new Date().toLocaleString(),
-          endTime: new Date(),
           duration: Math.round((new Date() - new Date(session.startTime)) / (1000 * 60)) + ' minutes'
         })
         console.log('Inspection updated in Firebase successfully')
