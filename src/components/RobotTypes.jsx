@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -390,12 +390,12 @@ const RobotTypes = ({ user }) => {
             {/* Basic Information */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="name">Serial Number</Label>
+                <Label htmlFor="name">Robot Type Name</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="e.g., RBT-001"
+                  placeholder="e.g., Security Bot Pro"
                 />
               </div>
               <div>
