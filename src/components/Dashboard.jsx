@@ -550,7 +550,8 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                         </div>
                       </div>
                     </div>
-                  )) : (
+                  );
+                }) : (
                     <div className="text-center py-8 text-gray-500">
                       <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                       <p className="text-sm">No recent maintenance activities</p>
