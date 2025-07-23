@@ -1,9 +1,17 @@
 // PDF Service
 // Handles PDF generation requests to the backend service
 
+
 const PDF_SERVICE_URL = 'http://127.0.0.1:5001/api/reports';
 
 import { jsPDF } from 'jspdf'
+=======
+// Base URL for the PDF service
+// Can be overridden via the `VITE_PDF_SERVICE_URL` environment variable
+const PDF_SERVICE_URL =
+  import.meta.env.VITE_PDF_SERVICE_URL ||
+  'https://5000-idd93o1prlynxk19ggzn6-afbdef95.manusvm.computer/api/reports';
+
 
 class PDFService {
   constructor() {
