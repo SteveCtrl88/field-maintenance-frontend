@@ -13,6 +13,7 @@ import CustomerForm from './components/CustomerForm'
 import RobotTypes from './components/RobotTypes'
 import UserManagement from './components/UserManagement'
 import Reports from './components/Reports'
+import InspectionDetail from './components/InspectionDetail'
 import authService from './services/auth.js'
 import firebaseAuthService from './services/firebase.js'
 import './App.css'
@@ -243,15 +244,23 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          <Route 
-            path="/reports" 
+          <Route
+            path="/reports"
             element={
-              isAuthenticated && currentUser?.role === 'admin' ? 
-                <Reports 
+              isAuthenticated && currentUser?.role === 'admin' ?
+                <Reports
                   user={currentUser}
-                /> : 
+                /> :
                 <Navigate to="/dashboard" replace />
-            } 
+            }
+          />
+          <Route
+            path="/inspections/:id"
+            element={
+              isAuthenticated ?
+                <InspectionDetail user={currentUser} /> :
+                <Navigate to="/login" replace />
+            }
           />
           <Route 
             path="/completion" 
