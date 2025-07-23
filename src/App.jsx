@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import ProtectedRoute from './components/ProtectedRoute'
 import LoginScreen from './components/LoginScreen'
 import Dashboard from './components/Dashboard'
 import QRScanner from './components/QRScanner'
@@ -236,11 +237,9 @@ function App() {
           <Route 
             path="/users" 
             element={
-              isAuthenticated && currentUser?.role === 'admin' ? 
-                <UserManagement 
-                  user={currentUser}
-                /> : 
-                <Navigate to="/dashboard" replace />
+              <ProtectedRoute adminOnly={true}>
+                <UserManagement user={currentUser} />
+              </ProtectedRoute>
             } 
           />
           <Route 

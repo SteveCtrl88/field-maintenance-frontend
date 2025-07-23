@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import userService from '../services/userService'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -13,6 +14,11 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
   const [customers, setCustomers] = useState([])
   const [inspections, setInspections] = useState([])
   const [showTestCreator, setShowTestCreator] = useState(false)
+
+  // Get current user and role information
+  const currentUser = userService.getCurrentUser() || user
+  const isAdmin = userService.isAdmin()
+  const isTechnician = userService.isTechnician()
 
   // Load data from API on component mount
   useEffect(() => {
@@ -60,9 +66,12 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
         return timeB - timeA
       })
       
+      // Apply role-based filtering
+      const filteredInspections = userService.filterInspectionsByRole(combinedInspections)
+      
       // Ensure we have arrays
       setCustomers(Array.isArray(customersData) ? customersData : [])
-      setInspections(combinedInspections)
+      setInspections(filteredInspections)
     } catch (error) {
       console.error('Error loading dashboard data:', error)
       
@@ -151,13 +160,30 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
               <h1 className="text-lg font-semibold text-gray-900 sm:hidden">Ctrl</h1>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
+              {/* Admin-only User Management Button */}
+              {isAdmin && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => navigate('/users')}
+                  className="hidden sm:flex text-xs"
+                >
+                  <Settings className="h-4 w-4 mr-1" />
+                  Users
+                </Button>
+              )}
+              
               <div className="hidden sm:flex items-center space-x-2">
                 <User className="h-5 w-5 text-gray-500" />
-                <span className="text-sm text-gray-700">{user.name}</span>
-                <Badge variant="secondary">{user.role}</Badge>
+                <span className="text-sm text-gray-700">{currentUser?.name || user?.name}</span>
+                <Badge variant={isAdmin ? "destructive" : "secondary"}>
+                  {currentUser?.role || user?.role}
+                </Badge>
               </div>
               <div className="sm:hidden">
-                <Badge variant="secondary" className="text-xs">{user.role}</Badge>
+                <Badge variant={isAdmin ? "destructive" : "secondary"} className="text-xs">
+                  {currentUser?.role || user?.role}
+                </Badge>
               </div>
               <Button variant="outline" size="sm" onClick={onLogout} className="text-xs sm:text-sm">
                 <LogOut className="h-4 w-4 sm:mr-2" />

@@ -5,18 +5,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CheckCircle, AlertCircle, Loader2, Plus, Users, Bot } from 'lucide-react'
-import apiService from '../services/api.js'
+import apiService from '../services/api'
+import userService from '../services/userService'
 
 const TestInspectionCreator = ({ onInspectionCreated }) => {
   const [customers, setCustomers] = useState([])
+  const [technicians, setTechnicians] = useState([])
   const [selectedCustomer, setSelectedCustomer] = useState(null)
+  const [selectedTechnician, setSelectedTechnician] = useState(null)
   const [loading, setLoading] = useState(false)
   const [loadingCustomers, setLoadingCustomers] = useState(true)
   const [result, setResult] = useState(null)
 
-  // Load customers on component mount
+  // Load customers and technicians on component mount
   useEffect(() => {
     loadCustomers()
+    loadTechnicians()
   }, [])
 
   const loadCustomers = async () => {
@@ -33,6 +37,26 @@ const TestInspectionCreator = ({ onInspectionCreated }) => {
       })
     } finally {
       setLoadingCustomers(false)
+    }
+  }
+
+  const loadTechnicians = async () => {
+    try {
+      const result = await userService.getUsers()
+      if (result.success) {
+        // Filter for technicians only
+        const technicianUsers = result.data.filter(user => user.role === 'technician')
+        setTechnicians(technicianUsers)
+      }
+    } catch (error) {
+      console.error('Error loading technicians:', error)
+      // Set default technician for testing
+      setTechnicians([{
+        id: 'tech-default',
+        name: 'Test Technician',
+        email: 'tech@ctrlrobotics.com',
+        role: 'technician'
+      }])
     }
   }
 
@@ -74,8 +98,8 @@ const TestInspectionCreator = ({ onInspectionCreated }) => {
             customerName: customer.companyName || customer.name,
             customerId: customer.id || customer._id,
             customerAddress: customer.address || 'No address provided',
-            technicianName: 'Unassigned',
-            technicianId: null,
+            technicianName: selectedTechnician?.name || 'Unassigned',
+            technicianId: selectedTechnician?.id || null,
             overallStatus: 'pending',
             issues: 0,
             notes: `Inspection scheduled for ${robot.serialNumber}`,
