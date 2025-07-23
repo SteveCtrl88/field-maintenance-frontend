@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { QrCode, Camera, ArrowLeft, Loader2, AlertCircle } from 'lucide-react'
 import apiService from '../services/api'
 
-const QRScanner = ({ onRobotScanned, user }) => {
+const QRScanner = ({ onRobotScanned }) => {
   const [isScanning, setIsScanning] = useState(false)
   const [manualSerial, setManualSerial] = useState('')
   const [error, setError] = useState('')

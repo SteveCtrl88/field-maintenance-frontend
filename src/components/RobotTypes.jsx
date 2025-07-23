@@ -25,12 +25,10 @@ import apiService from '../services/api'
 const RobotTypes = ({ user }) => {
   const navigate = useNavigate()
   const [robotTypes, setRobotTypes] = useState([])
-  const [loading, setLoading] = useState(true)
 
   // Load robot types from Firebase
   const loadRobotTypes = async () => {
     try {
-      setLoading(true)
       const result = await apiService.getRobotTypes()
       if (result.success) {
         setRobotTypes(result.data || [])
@@ -43,7 +41,7 @@ const RobotTypes = ({ user }) => {
       console.error('Error loading robot types:', error)
       setRobotTypes([])
     } finally {
-      setLoading(false)
+      // no-op
     }
   }
 
@@ -103,16 +101,24 @@ const RobotTypes = ({ user }) => {
 
   const handleSave = async () => {
     try {
-      console.log('Saving robot type with data:', formData)
+      if (import.meta.env.DEV) {
+        console.log('Saving robot type with data:', formData)
+      }
       
       if (editingType) {
         // Update existing
-        console.log('Updating robot type:', editingType.id)
+        if (import.meta.env.DEV) {
+          console.log('Updating robot type:', editingType.id)
+        }
         const result = await apiService.updateRobotType(editingType.id, formData)
-        console.log('Update result:', result)
+        if (import.meta.env.DEV) {
+          console.log('Update result:', result)
+        }
         
         if (result.success) {
-          console.log('Update successful, refreshing list')
+          if (import.meta.env.DEV) {
+            console.log('Update successful, refreshing list')
+          }
           // Refresh the entire list to ensure we get the latest data
           await loadRobotTypes()
         } else {
@@ -121,12 +127,18 @@ const RobotTypes = ({ user }) => {
         }
       } else {
         // Add new
-        console.log('Creating new robot type')
+        if (import.meta.env.DEV) {
+          console.log('Creating new robot type')
+        }
         const result = await apiService.createRobotType(formData)
-        console.log('Create result:', result)
+        if (import.meta.env.DEV) {
+          console.log('Create result:', result)
+        }
         
         if (result.success) {
-          console.log('Create successful, refreshing list')
+          if (import.meta.env.DEV) {
+            console.log('Create successful, refreshing list')
+          }
           await loadRobotTypes()
         } else {
           console.error('Failed to create robot type:', result.error)
@@ -142,12 +154,18 @@ const RobotTypes = ({ user }) => {
 
   const handleDelete = async (id) => {
     try {
-      console.log('Attempting to delete robot type with ID:', id)
+      if (import.meta.env.DEV) {
+        console.log('Attempting to delete robot type with ID:', id)
+      }
       const result = await apiService.deleteRobotType(id)
-      console.log('Delete API response:', result)
+      if (import.meta.env.DEV) {
+        console.log('Delete API response:', result)
+      }
       
       if (result.success) {
-        console.log('Delete successful, updating UI')
+        if (import.meta.env.DEV) {
+          console.log('Delete successful, updating UI')
+        }
         setRobotTypes(prev => prev.filter(type => type.id !== id))
         // Refresh the list to ensure consistency
         loadRobotTypes()

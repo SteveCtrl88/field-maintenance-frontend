@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import MaintenanceChecklist from './MaintenanceChecklist'
 import apiService from '../services/api'
@@ -11,16 +11,20 @@ const MaintenanceHandler = ({ maintenanceSession, scannedRobot, user, onSessionU
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+
   useEffect(() => {
-    const inspectionId = searchParams.get('edit')
-    
+    const inspectionId =
+      searchParams.get('inspectionId') || searchParams.get('edit')
+
     if (inspectionId && !maintenanceSession) {
       // Load scheduled inspection from API or localStorage
       loadScheduledInspection(inspectionId)
     }
-  }, [searchParams, maintenanceSession])
+  }, [searchParams, maintenanceSession, loadScheduledInspection])
 
-  const loadScheduledInspection = async (inspectionId) => {
+ main
+
+  const loadScheduledInspection = useCallback(async (inspectionId) => {
     try {
       setLoading(true)
       setError('')
@@ -30,8 +34,10 @@ const MaintenanceHandler = ({ maintenanceSession, scannedRobot, user, onSessionU
       try {
         const response = await apiService.getInspection(inspectionId)
         inspection = response.data || response
-      } catch (apiError) {
-        console.log('API not available, checking localStorage')
+      } catch {
+        if (import.meta.env.DEV) {
+          console.log('API not available, checking localStorage')
+        }
       }
 
       // Fallback to localStorage if API fails
@@ -81,8 +87,10 @@ const MaintenanceHandler = ({ maintenanceSession, scannedRobot, user, onSessionU
             startTime: new Date().toISOString(),
             progress: 0
           })
-        } catch (updateError) {
-          console.log('Could not update inspection status via API')
+        } catch {
+          if (import.meta.env.DEV) {
+            console.log('Could not update inspection status via API')
+          }
         }
       }
 
@@ -95,7 +103,18 @@ const MaintenanceHandler = ({ maintenanceSession, scannedRobot, user, onSessionU
     } finally {
       setLoading(false)
     }
-  }
+  }, [user, navigate])
+
+  // run after defining loadScheduledInspection to prevent reference errors
+  useEffect(() => {
+    const inspectionId =
+      searchParams.get('inspectionId') || searchParams.get('edit')
+
+    if (inspectionId && !maintenanceSession) {
+      // Load scheduled inspection from API or localStorage
+      loadScheduledInspection(inspectionId)
+    }
+  }, [searchParams, maintenanceSession, loadScheduledInspection])
 
   const handleSessionUpdate = (updatedSession) => {
     setCurrentSession(updatedSession)
