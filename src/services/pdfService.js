@@ -1,7 +1,9 @@
 // PDF Service
 // Handles PDF generation requests to the backend service
 
-const PDF_SERVICE_URL = 'https://5000-idd93o1prlynxk19ggzn6-afbdef95.manusvm.computer/api/reports';
+const PDF_SERVICE_URL = 'http://127.0.0.1:5001/api/reports';
+
+import { jsPDF } from 'jspdf'
 
 class PDFService {
   constructor() {
@@ -52,8 +54,24 @@ class PDFService {
       
       return { success: true, filename };
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      throw error;
+      console.error('Error generating PDF via backend:', error);
+      try {
+        const fallbackName = 'maintenance_report.pdf'
+        const doc = new jsPDF()
+        doc.text('Maintenance Report', 10, 10)
+        const yStart = 20
+        let y = yStart
+        Object.entries(reportData).forEach(([key, value]) => {
+          if (Array.isArray(value)) return
+          doc.text(`${key}: ${String(value)}`, 10, y)
+          y += 10
+        })
+        doc.save(fallbackName)
+        return { success: true, filename: fallbackName }
+      } catch (e) {
+        console.error('Fallback PDF generation failed:', e)
+        throw e
+      }
     }
   }
 
