@@ -91,6 +91,10 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
     navigate(`/maintenance?edit=${inspectionId}`)
   }
 
+  const handleStartInspection = (inspectionId) => {
+    navigate(`/maintenance?inspectionId=${inspectionId}`)
+  }
+
   const handleTestInspectionCreated = () => {
     // Refresh dashboard data to show the new inspection
     loadDashboardData()
@@ -409,10 +413,10 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                             </Button>
                           )}
                           {item.status === 'scheduled' && (
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="default"
-                              onClick={() => handleEditInspection(item.id)}
+                              onClick={() => handleStartInspection(item.id)}
                               className="h-8 text-xs"
                             >
                               <Clock className="h-3 w-3 mr-1" />
@@ -462,10 +466,10 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                             </Button>
                           )}
                           {item.status === 'scheduled' && (
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="default"
-                              onClick={() => handleEditInspection(item.id)}
+                              onClick={() => handleStartInspection(item.id)}
                             >
                               <Clock className="h-4 w-4 mr-1" />
                               Start Inspection
