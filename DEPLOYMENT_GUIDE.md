@@ -30,7 +30,7 @@ Deploy the contents of the `dist/` folder to your hosting service:
 ### 4. Environment Configuration
 Ensure the following environment variables are set:
 - Firebase configuration is already included in the code
-- PDF service URL may need updating in `src/services/pdfService.js`
+- `VITE_PDF_SERVICE_URL` - base URL of the PDF service used by `pdfService.js`
 
 ## PDF Backend Deployment
 
