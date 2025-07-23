@@ -38,10 +38,11 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
       const customersData = customersResponse?.data || customersResponse?.customers || customersResponse || []
       let inspectionsData = inspectionsResponse?.data || inspectionsResponse?.inspections || inspectionsResponse || []
       
-      // Also load from localStorage for completed inspections
+      // Also load from localStorage for completed inspections and scheduled inspections
       const localReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
+      const scheduledInspections = JSON.parse(localStorage.getItem('scheduledInspections') || '[]')
       
-      // Combine API inspections with local reports
+      // Combine API inspections with local reports and scheduled inspections
       const combinedInspections = [
         ...inspectionsData,
         ...localReports.map(report => ({
@@ -56,6 +57,20 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
           issues: report.issues || 0,
           photos: report.photos || 0,
           overallStatus: report.overallStatus || 'good'
+        })),
+        ...scheduledInspections.map(inspection => ({
+          id: inspection.id,
+          robotSerial: inspection.robotSerial,
+          customer: inspection.customerName || inspection.customer,
+          date: inspection.date,
+          status: inspection.status || 'scheduled',
+          progress: inspection.progress || 0,
+          type: 'maintenance_inspection',
+          technicianId: inspection.technicianId,
+          technicianName: inspection.technicianName,
+          issues: inspection.issues || 0,
+          photos: inspection.photos || 0,
+          overallStatus: inspection.overallStatus || 'pending'
         }))
       ]
       

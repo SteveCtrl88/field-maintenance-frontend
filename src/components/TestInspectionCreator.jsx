@@ -275,7 +275,7 @@ const TestInspectionCreator = ({ onInspectionCreated }) => {
             ) : (
               <Plus className="h-4 w-4" />
             )}
-            Create Inspections for All Robots
+            Create Inspection for All Robots
           </Button>
         </div>
         
