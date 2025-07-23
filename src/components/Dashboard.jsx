@@ -34,6 +34,24 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
     return { customerId: parts[1] || null, robotSerial: null }
   }
 
+  const customerMap = useMemo(() => {
+    const map = {}
+    customers.forEach((c) => {
+      const id = c.id || c._id
+      if (id) map[id] = c
+    })
+    return map
+  }, [customers])
+
+  const parseInspectionId = (id) => {
+    if (!id) return { customerId: null, robotSerial: null }
+    const parts = id.split('-')
+    if (parts.length >= 4) {
+      return { customerId: parts[1], robotSerial: parts.slice(2, parts.length - 1).join('-') }
+    }
+    return { customerId: parts[1] || null, robotSerial: null }
+  }
+
   // Get current user and role information from Firebase Auth
   const currentUser = user || authService.getCurrentUser()
   const isAdmin = currentUser?.role === 'admin' || currentUser?.email === 'steve@ctrlrobotics.com'
@@ -97,14 +115,22 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
       })
 
       // Save to state
+ 8wl7jt-codex/recreate-pnpm-lock.yaml
       setCustomers(customersData);
       setCustomersToVisit(filteredCustomers)
+=======
+      setCustomers(filteredCustomers)
+ main
       setInspections(filteredInspections)
     } catch (error) {
       console.error('Error loading dashboard data:', error)
       setInspections([])
+ 8wl7jt-codex/recreate-pnpm-lock.yaml
       setCustomers([]);
       setCustomersToVisit([])
+=======
+      setCustomers([])
+ main
     }
   }
 
@@ -431,7 +457,10 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                   {Array.isArray(inspections) && inspections.length > 0 ? inspections.map((item) => {
                     const { customerId, robotSerial } = parseInspectionId(item.id)
                     const customer = customerMap[customerId]
+ 8wl7jt-codex/recreate-pnpm-lock.yaml
                     const dateText = item.completedDate || item.date;
+
+ main
                     const robotText = item.robotSerial || item.robot_serial || robotSerial || 'Unknown Robot'
                     const customerText = item.customer || item.customerName || (customer?.companyName || customer?.name) || 'Unknown Customer'
                     return (
