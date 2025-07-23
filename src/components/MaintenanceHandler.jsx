@@ -23,6 +23,7 @@ const MaintenanceHandler = ({ maintenanceSession, scannedRobot, user, onSessionU
   }, [searchParams, maintenanceSession, loadScheduledInspection])
 
  main
+
   const loadScheduledInspection = useCallback(async (inspectionId) => {
     try {
       setLoading(true)
