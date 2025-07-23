@@ -92,6 +92,7 @@ const MaintenanceHandler = ({ maintenanceSession, scannedRobot, user, onSessionU
     }
   }, [user, navigate])
 
+  // run after defining loadScheduledInspection to prevent reference errors
   useEffect(() => {
     const inspectionId =
       searchParams.get('inspectionId') || searchParams.get('edit')
