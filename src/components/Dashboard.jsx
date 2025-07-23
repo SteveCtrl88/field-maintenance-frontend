@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import authService from '../services/auth.js'
 import { Button } from '@/components/ui/button'
@@ -14,11 +14,29 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
   const [customers, setCustomers] = useState([])
   const [inspections, setInspections] = useState([])
   const [showTestCreator, setShowTestCreator] = useState(false)
+  const [customersToVisit, setCustomersToVisit] = useState([])
+
+  const customerMap = useMemo(() => {
+    const map = {}
+    customers.forEach((c) => {
+      const id = c.id || c._id
+      if (id) map[id] = c
+    })
+    return map
+  }, [customers])
+
+  const parseInspectionId = (id) => {
+    if (!id) return { customerId: null, robotSerial: null }
+    const parts = id.split('-')
+    if (parts.length >= 4) {
+      return { customerId: parts[1], robotSerial: parts.slice(2, parts.length - 1).join('-') }
+    }
+    return { customerId: parts[1] || null, robotSerial: null }
+  }
 
   // Get current user and role information from Firebase Auth
   const currentUser = user || authService.getCurrentUser()
   const isAdmin = currentUser?.role === 'admin' || currentUser?.email === 'steve@ctrlrobotics.com'
-  const isTechnician = currentUser?.role === 'technician'
 
   // Load data from API on component mount
   useEffect(() => {
@@ -38,75 +56,55 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
       const customersData = customersResponse?.data || customersResponse?.customers || customersResponse || []
       let inspectionsData = inspectionsResponse?.data || inspectionsResponse?.inspections || inspectionsResponse || []
       
-      // Also load from localStorage for completed inspections and scheduled inspections
-      const localReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
-      const scheduledInspections = JSON.parse(localStorage.getItem('scheduledInspections') || '[]')
-      
-      // Combine API inspections with local reports and scheduled inspections
-      const combinedInspections = [
-        ...inspectionsData,
-        ...localReports.map(report => ({
-          id: report.id,
-          robotSerial: report.robotSerial,
-          customer: report.customerName,
-          date: report.completedDate || new Date(report.completedTime).toLocaleDateString(),
-          status: report.status,
-          progress: 100,
-          type: 'maintenance_inspection',
-          completedTime: report.completedTime,
-          issues: report.issues || 0,
-          photos: report.photos || 0,
-          overallStatus: report.overallStatus || 'good'
-        })),
-        ...scheduledInspections.map(inspection => ({
-          id: inspection.id,
-          robotSerial: inspection.robotSerial,
-          customer: inspection.customerName || inspection.customer,
-          date: inspection.date,
-          status: inspection.status || 'scheduled',
-          progress: inspection.progress || 0,
-          type: 'maintenance_inspection',
-          technicianId: inspection.technicianId,
-          technicianName: inspection.technicianName,
-          issues: inspection.issues || 0,
-          photos: inspection.photos || 0,
-          overallStatus: inspection.overallStatus || 'pending'
-        }))
-      ]
-      
+      // Only use data from the API
+      const combinedInspections = Array.isArray(inspectionsData) ? inspectionsData : []
+
+      // Filter inspections for the current technician if not admin
+      const filteredInspections = isAdmin
+        ? combinedInspections
+        : combinedInspections.filter(
+            (inspection) =>
+              inspection.technicianId === currentUser?.id ||
+              inspection.technicianId === currentUser?.uid
+          )
+
+      const pendingStatuses = ['scheduled', 'in_progress', 'pending']
+      const customerKeysToVisit = new Set()
+      filteredInspections.forEach((insp) => {
+        if (pendingStatuses.includes(insp.status)) {
+          if (insp.customerId) customerKeysToVisit.add(insp.customerId)
+          if (insp.customer) customerKeysToVisit.add(insp.customer)
+          if (insp.customerName) customerKeysToVisit.add(insp.customerName)
+        }
+      })
+
+      const filteredCustomers = Array.isArray(customersData)
+        ? customersData.filter((customer) => {
+            const id = customer.id || customer._id
+            const name = customer.companyName || customer.name
+            return (
+              customerKeysToVisit.has(id) ||
+              customerKeysToVisit.has(name)
+            )
+          })
+        : []
+
       // Sort by completion time (most recent first)
-      combinedInspections.sort((a, b) => {
+      filteredInspections.sort((a, b) => {
         const timeA = new Date(a.completedTime || a.date)
         const timeB = new Date(b.completedTime || b.date)
         return timeB - timeA
       })
-      
-      // Apply role-based filtering directly
-      const filteredInspections = isAdmin 
-        ? combinedInspections 
-        : combinedInspections.filter(inspection => 
-            inspection.technicianId === currentUser?.id || 
-            inspection.technicianId === currentUser?.uid
-          )
-      
-      // Ensure we have arrays
-      setCustomers(Array.isArray(customersData) ? customersData : [])
+
+      // Save to state
+      setCustomers(customersData);
+      setCustomersToVisit(filteredCustomers)
       setInspections(filteredInspections)
     } catch (error) {
       console.error('Error loading dashboard data:', error)
-      
-      // Load from localStorage as fallback
-      const localReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
-      setInspections(localReports.map(report => ({
-        id: report.id,
-        robotSerial: report.robotSerial,
-        customer: report.customerName,
-        date: report.completedDate || new Date(report.completedTime).toLocaleDateString(),
-        status: report.status,
-        progress: 100,
-        type: 'maintenance_inspection'
-      })))
-      setCustomers([])
+      setInspections([])
+      setCustomers([]);
+      setCustomersToVisit([])
     }
   }
 
@@ -122,6 +120,10 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
 
   const handleStartInspection = (inspectionId) => {
     navigate(`/maintenance?inspectionId=${inspectionId}`)
+  }
+
+  const handleViewInspection = (inspectionId) => {
+    navigate(`/inspections/${inspectionId}`)
   }
 
   const handleTestInspectionCreated = () => {
@@ -343,7 +345,7 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 sm:space-y-4">
-                  {Array.isArray(customers) && customers.length > 0 ? customers.slice(0, 3).map((customer) => {
+                  {Array.isArray(customersToVisit) && customersToVisit.length > 0 ? customersToVisit.slice(0, 3).map((customer) => {
                     // Calculate days until next inspection
                     const today = new Date()
                     const nextInspection = customer.inspection_schedule?.next_inspection ? new Date(customer.inspection_schedule.next_inspection) : null
@@ -426,7 +428,14 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 sm:space-y-4">
-                  {Array.isArray(inspections) && inspections.length > 0 ? inspections.map((item) => (
+                  {Array.isArray(inspections) && inspections.length > 0 ? (
+                    inspections.map((item) => {
+                    const { customerId, robotSerial } = parseInspectionId(item.id)
+                    const customer = customerMap[customerId]
+                    const dateText = item.completedDate || item.date;
+                    const robotText = item.robotSerial || item.robot_serial || robotSerial || 'Unknown Robot'
+                    const customerText = item.customer || item.customerName || (customer?.companyName || customer?.name) || 'Unknown Customer'
+                    return (
                     <div key={item.id} className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                       {/* Mobile Layout */}
                       <div className="sm:hidden">
@@ -434,8 +443,8 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                           <div className="flex items-center space-x-2">
                             {getStatusIcon(item.status)}
                             <div>
-                              <div className="font-medium text-sm">{item.robotSerial}</div>
-                              <div className="text-xs text-gray-600">{item.customer}</div>
+                              <div className="font-medium text-sm">{robotText}</div>
+                              <div className="text-xs text-gray-600">{customerText}</div>
                             </div>
                           </div>
                           <Badge className={`${getStatusColor(item.status)} text-xs`}>
@@ -445,7 +454,7 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                         <div className="flex items-center justify-between">
                           <div className="text-xs text-gray-600 flex items-center">
                             <Calendar className="h-3 w-3 mr-1" />
-                            {item.date}
+                            {dateText}
                           </div>
                           {item.status === 'in_progress' && (
                             <Button 
@@ -469,6 +478,17 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                               Start
                             </Button>
                           )}
+                          {item.status === 'completed' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleViewInspection(item.id)}
+                              className="h-8 text-xs"
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              View
+                            </Button>
+                          )}
                         </div>
                         {item.status === 'in_progress' && (
                           <div className="text-xs text-blue-600 mt-2">
@@ -482,8 +502,8 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                         <div className="flex items-center space-x-4">
                           {getStatusIcon(item.status)}
                           <div>
-                            <div className="font-medium">{item.robotSerial}</div>
-                            <div className="text-sm text-gray-600">{item.customer}</div>
+                            <div className="font-medium">{robotText}</div>
+                            <div className="text-sm text-gray-600">{customerText}</div>
                             {item.status === 'in_progress' && (
                               <div className="text-xs text-blue-600 mt-1">
                                 Progress: {item.progress}%
@@ -495,7 +515,7 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                           <div className="text-right">
                             <div className="text-sm text-gray-600 flex items-center">
                               <Calendar className="h-4 w-4 mr-1" />
-                              {item.date}
+                              {dateText}
                             </div>
                           </div>
                           <Badge className={getStatusColor(item.status)}>
@@ -521,10 +541,22 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
                               Start Inspection
                             </Button>
                           )}
+                          {item.status === 'completed' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleViewInspection(item.id)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>
-                  )) : (
+                  );
+                })
+                  ) : (
                     <div className="text-center py-8 text-gray-500">
                       <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                       <p className="text-sm">No recent maintenance activities</p>
