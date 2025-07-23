@@ -38,74 +38,52 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
       const customersData = customersResponse?.data || customersResponse?.customers || customersResponse || []
       let inspectionsData = inspectionsResponse?.data || inspectionsResponse?.inspections || inspectionsResponse || []
       
-      // Also load from localStorage for completed inspections and scheduled inspections
-      const localReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
-      const scheduledInspections = JSON.parse(localStorage.getItem('scheduledInspections') || '[]')
-      
-      // Combine API inspections with local reports and scheduled inspections
-      const combinedInspections = [
-        ...inspectionsData,
-        ...localReports.map(report => ({
-          id: report.id,
-          robotSerial: report.robotSerial,
-          customer: report.customerName,
-          date: report.completedDate || new Date(report.completedTime).toLocaleDateString(),
-          status: report.status,
-          progress: 100,
-          type: 'maintenance_inspection',
-          completedTime: report.completedTime,
-          issues: report.issues || 0,
-          photos: report.photos || 0,
-          overallStatus: report.overallStatus || 'good'
-        })),
-        ...scheduledInspections.map(inspection => ({
-          id: inspection.id,
-          robotSerial: inspection.robotSerial,
-          customer: inspection.customerName || inspection.customer,
-          date: inspection.date,
-          status: inspection.status || 'scheduled',
-          progress: inspection.progress || 0,
-          type: 'maintenance_inspection',
-          technicianId: inspection.technicianId,
-          technicianName: inspection.technicianName,
-          issues: inspection.issues || 0,
-          photos: inspection.photos || 0,
-          overallStatus: inspection.overallStatus || 'pending'
-        }))
-      ]
-      
+      // Only use data from the API
+      const combinedInspections = Array.isArray(inspectionsData) ? inspectionsData : []
+
+      // Filter inspections for the current technician if not admin
+      const filteredInspections = isAdmin
+        ? combinedInspections
+        : combinedInspections.filter(
+            (inspection) =>
+              inspection.technicianId === currentUser?.id ||
+              inspection.technicianId === currentUser?.uid
+          )
+
+      const pendingStatuses = ['scheduled', 'in_progress', 'pending']
+      const customerKeysToVisit = new Set()
+      filteredInspections.forEach((insp) => {
+        if (pendingStatuses.includes(insp.status)) {
+          if (insp.customerId) customerKeysToVisit.add(insp.customerId)
+          if (insp.customer) customerKeysToVisit.add(insp.customer)
+          if (insp.customerName) customerKeysToVisit.add(insp.customerName)
+        }
+      })
+
+      const filteredCustomers = Array.isArray(customersData)
+        ? customersData.filter((customer) => {
+            const id = customer.id || customer._id
+            const name = customer.companyName || customer.name
+            return (
+              customerKeysToVisit.has(id) ||
+              customerKeysToVisit.has(name)
+            )
+          })
+        : []
+
       // Sort by completion time (most recent first)
-      combinedInspections.sort((a, b) => {
+      filteredInspections.sort((a, b) => {
         const timeA = new Date(a.completedTime || a.date)
         const timeB = new Date(b.completedTime || b.date)
         return timeB - timeA
       })
-      
-      // Apply role-based filtering directly
-      const filteredInspections = isAdmin 
-        ? combinedInspections 
-        : combinedInspections.filter(inspection => 
-            inspection.technicianId === currentUser?.id || 
-            inspection.technicianId === currentUser?.uid
-          )
-      
-      // Ensure we have arrays
-      setCustomers(Array.isArray(customersData) ? customersData : [])
+
+      // Save to state
+      setCustomers(filteredCustomers)
       setInspections(filteredInspections)
     } catch (error) {
       console.error('Error loading dashboard data:', error)
-      
-      // Load from localStorage as fallback
-      const localReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
-      setInspections(localReports.map(report => ({
-        id: report.id,
-        robotSerial: report.robotSerial,
-        customer: report.customerName,
-        date: report.completedDate || new Date(report.completedTime).toLocaleDateString(),
-        status: report.status,
-        progress: 100,
-        type: 'maintenance_inspection'
-      })))
+      setInspections([])
       setCustomers([])
     }
   }
