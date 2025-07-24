@@ -100,13 +100,13 @@ const Dashboard = ({ user, onLogout, onNewMaintenance }) => {
 
       // Save to state
       setCustomers(customersData);
-      setCustomersToVisit(filteredCustomers)
+      setCustomersToVisit(filteredCustomers);
       setInspections(filteredInspections)
     } catch (error) {
       console.error('Error loading dashboard data:', error)
       setInspections([])
       setCustomers([]);
-      setCustomersToVisit([])
+      setCustomersToVisit([]);
     }
   }
 
