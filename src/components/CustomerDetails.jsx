@@ -38,23 +38,23 @@ const CustomerDetails = ({ user }) => {
         
         if (result.success && result.data) {
           setCustomer(result.data)
-          
-          // Load inspection history for this customer
-          const localReports = JSON.parse(localStorage.getItem('maintenanceReports') || '[]')
-          const customerInspections = localReports.filter(report => 
-            report.customerId === id || 
-            report.customerName === result.data.name ||
-            report.customerName === result.data.companyName
+
+          // Load inspection history from API
+          const inspRes = await apiService.getInspections()
+          let allInspections = inspRes.data || inspRes.inspections || []
+          allInspections = allInspections.filter((insp) =>
+            insp.customerId === id ||
+            insp.customer === result.data.name ||
+            insp.customer === result.data.companyName
           )
-          
-          // Sort by completion time (most recent first)
-          customerInspections.sort((a, b) => {
-            const timeA = new Date(a.completedTime)
-            const timeB = new Date(b.completedTime)
+
+          allInspections.sort((a, b) => {
+            const timeA = new Date(a.completedTime || a.date)
+            const timeB = new Date(b.completedTime || b.date)
             return timeB - timeA
           })
-          
-          setInspections(customerInspections)
+
+          setInspections(allInspections)
         } else {
           setError('Failed to load customer data')
         }
@@ -276,11 +276,21 @@ const CustomerDetails = ({ user }) => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-4">
-                    <Bot className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-500">Robot data will be displayed here</p>
-                    <p className="text-xs text-gray-400 mt-1">Feature coming soon</p>
-                  </div>
+                  {customer?.robots && customer.robots.length > 0 ? (
+                    <div className="space-y-3">
+                      {customer.robots.map((robot) => (
+                        <div key={robot.id || robot._id} className="p-3 border rounded-md">
+                          <div className="font-medium">{robot.name || robot.model || 'Robot'}</div>
+                          <div className="text-sm text-gray-600">Serial: {robot.serialNumber || robot.serial_number}</div>
+                          {robot.location && (
+                            <div className="text-sm text-gray-600">Location: {robot.location}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-gray-500">No robots registered</div>
+                  )}
                 </CardContent>
               </Card>
 
