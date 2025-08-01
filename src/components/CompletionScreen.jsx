@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import emailjs from 'emailjs-com'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,6 +17,10 @@ import {
   Loader2
 } from 'lucide-react'
 import pdfService from '../services/pdfService'
+
+const EMAIL_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID
+const EMAIL_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
+const EMAIL_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
 
 const CompletionScreen = ({ user, onNewMaintenance }) => {
   const navigate = useNavigate()
@@ -65,9 +69,21 @@ const CompletionScreen = ({ user, onNewMaintenance }) => {
 
   const handleEmailReport = async () => {
     try {
-      // For now, just show a message that email functionality is coming soon
-      const customerEmail = robot?.customer?.email || robot?.customerEmail || 'customer email'
-      alert(`Email functionality coming soon! Report would be sent to ${customerEmail}`)
+      const customerEmail = robot?.customer?.email || robot?.customerEmail || 'customer@example.com'
+      const reportData = pdfService.prepareReportData(session, robot, user, robot.customer)
+
+      // Generate PDF (uses backend or fallback)
+      await pdfService.generatePDFReport(reportData)
+
+      const templateParams = {
+        to_email: customerEmail,
+        technician: user?.name || user?.email || 'Technician',
+        report_date: reportData.report_date,
+        message: 'Maintenance report attached.'
+      }
+
+      await emailjs.send(EMAIL_SERVICE_ID, EMAIL_TEMPLATE_ID, templateParams, EMAIL_PUBLIC_KEY)
+      alert(`Email sent to ${customerEmail}`)
     } catch (error) {
       console.error('Error sending email:', error)
     }

@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.pdf_backend.log
+*.pyc
+__pycache__/
